@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="google-site-verification" content="fBdJFWk-K291wvCM5oeXJELu_PpUngTb84YEwlcQ2-g" />
+    <title>FIRST STEP - Digital Khata</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
+      * {
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        font-family: 'Hind Siliguri', sans-serif;
+        overscroll-behavior-y: contain;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #065f46;
+        border-radius: 10px;
+      }
+
+      /* Multi-page Print Logic */
+      @media print {
+        @page {
+          size: A4;
+          margin: 15mm 10mm;
+        }
+        /* Hide everything by default */
+        body > * {
+          display: none !important;
+        }
+        /* Show only the print area and its parents to maintain layout */
+        #root, #root > div, main, .print-area {
+          display: block !important;
+          visibility: visible !important;
+          background: white !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          width: 100% !important;
+          height: auto !important;
+          position: static !important;
+          overflow: visible !important;
+        }
+        /* Hide UI elements within print area */
+        .no-print {
+          display: none !important;
+        }
+        /* Table page break settings */
+        table {
+          width: 100% !important;
+          border-collapse: collapse !important;
+          page-break-inside: auto;
+        }
+        tr {
+          page-break-inside: avoid;
+          page-break-after: auto;
+        }
+        thead {
+          display: table-header-group;
+        }
+        /* Reset background for print */
+        body {
+          background-color: white !important;
+        }
+      }
+
+      .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+      @keyframes scaleIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      .animate-scale-in {
+        animation: scaleIn 0.2s ease-out;
+      }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.91.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-gray-50 text-gray-900 selection:bg-emerald-100 selection:text-emerald-900">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>
