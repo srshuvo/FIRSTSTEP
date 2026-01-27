@@ -160,8 +160,6 @@ const App: React.FC = () => {
     }));
   };
 
-  // --- REVERSE LOGIC HANDLERS ---
-
   const deleteStockOut = (logId: string) => {
     setData(prev => {
       const log = prev.stockOutLogs.find(l => l.id === logId);
@@ -212,9 +210,23 @@ const App: React.FC = () => {
       const oldLog = prev.stockInLogs.find(l => l.id === updatedLog.id);
       if (!oldLog) return prev;
       
+      // Step 1: Temporarily revert old quantity to get base stock
       let tempProducts = prev.products.map(p => p.id === oldLog.productId ? { ...p, stock: Math.max(0, p.stock - oldLog.quantity) } : p);
       
-      const finalProducts = tempProducts.map(p => p.id === updatedLog.productId ? { ...p, stock: p.stock + updatedLog.quantity, costPrice: updatedLog.unitPrice } : p);
+      // Step 2: Apply Weighted Average with the new purchase details
+      const finalProducts = tempProducts.map(p => {
+        if (p.id === updatedLog.productId) {
+          const currentTotalValue = p.stock * p.costPrice;
+          const incomingValue = updatedLog.quantity * updatedLog.unitPrice;
+          const newTotalStock = p.stock + updatedLog.quantity;
+          const avgPrice = newTotalStock > 0 
+            ? Number(((currentTotalValue + incomingValue) / newTotalStock).toFixed(2)) 
+            : updatedLog.unitPrice;
+          
+          return { ...p, stock: newTotalStock, costPrice: avgPrice };
+        }
+        return p;
+      });
       
       return {
         ...prev,
@@ -303,11 +315,28 @@ const App: React.FC = () => {
           {currentPage === 'purchase' && (
             <Purchase 
               data={data} 
-              onRecord={(entry) => setData(prev => ({
-                ...prev, 
-                products: prev.products.map(p => p.id === entry.productId ? { ...p, stock: p.stock + entry.quantity, costPrice: entry.unitPrice } : p),
-                stockInLogs: [entry, ...prev.stockInLogs]
-              }))} 
+              onRecord={(entry) => setData(prev => {
+                const product = prev.products.find(p => p.id === entry.productId);
+                if (!product) return prev;
+
+                // Weighted Average Calculation:
+                // New Cost = ((Old Stock * Old Price) + (New Quantity * New Price)) / Total Stock
+                const currentTotalValue = product.stock * product.costPrice;
+                const incomingValue = entry.quantity * entry.unitPrice;
+                const totalNewStock = product.stock + entry.quantity;
+                const avgPrice = totalNewStock > 0 
+                  ? Number(((currentTotalValue + incomingValue) / totalNewStock).toFixed(2)) 
+                  : entry.unitPrice;
+
+                return {
+                  ...prev, 
+                  products: prev.products.map(p => p.id === entry.productId 
+                    ? { ...p, stock: totalNewStock, costPrice: avgPrice } 
+                    : p
+                  ),
+                  stockInLogs: [entry, ...prev.stockInLogs]
+                };
+              })} 
               lang={lang} 
             />
           )}
