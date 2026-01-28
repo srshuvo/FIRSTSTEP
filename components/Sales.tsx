@@ -69,7 +69,7 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
       productName: prod.name,
       productUnit: prod.unit,
       totalPrice: total,
-      dueAdded: Math.max(0, total - formData.paidAmount)
+      dueAdded: total - formData.paidAmount // Removed Math.max(0, ...) to support advance
     });
     alert(lang === 'bn' ? "বিক্রি সম্পন্ন!" : "Sale Completed!");
     setFormData({ ...formData, productId: '', quantity: 0, discount: 0, paidAmount: 0, billNumber: `BILL-${Date.now().toString().slice(-6)}` });

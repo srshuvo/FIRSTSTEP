@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { AppData, StockIn, StockOut } from '../types';
 
@@ -84,7 +85,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
       const updated: StockOut = {
         ...editFormData,
         totalPrice: total,
-        dueAdded: Math.max(0, total - (editFormData.paidAmount || 0))
+        dueAdded: total - (editFormData.paidAmount || 0) // Removed Math.max(0, ...) to support advance
       };
       onUpdateStockOut(updated);
     }

@@ -155,7 +155,7 @@ const App: React.FC = () => {
   const handlePaymentRecord = (log: PaymentLog) => {
     setData(prev => ({
       ...prev,
-      customers: prev.customers.map(c => c.id === log.customerId ? { ...c, dueAmount: Math.max(0, c.dueAmount - (log.amount + (log.discount || 0))) } : c),
+      customers: prev.customers.map(c => c.id === log.customerId ? { ...c, dueAmount: c.dueAmount - (log.amount + (log.discount || 0)) } : c),
       paymentLogs: [log, ...(prev.paymentLogs || [])]
     }));
   };
@@ -168,7 +168,7 @@ const App: React.FC = () => {
         ...prev,
         stockOutLogs: prev.stockOutLogs.filter(l => l.id !== logId),
         products: prev.products.map(p => p.id === log.productId ? { ...p, stock: p.stock + log.quantity } : p),
-        customers: prev.customers.map(c => c.id === log.customerId ? { ...c, dueAmount: Math.max(0, c.dueAmount - log.dueAdded) } : c)
+        customers: prev.customers.map(c => c.id === log.customerId ? { ...c, dueAmount: c.dueAmount - log.dueAdded } : c)
       };
     });
   };
@@ -179,7 +179,7 @@ const App: React.FC = () => {
       if (!oldLog) return prev;
       
       let tempProducts = prev.products.map(p => p.id === oldLog.productId ? { ...p, stock: p.stock + oldLog.quantity } : p);
-      let tempCustomers = prev.customers.map(c => c.id === oldLog.customerId ? { ...c, dueAmount: Math.max(0, c.dueAmount - oldLog.dueAdded) } : c);
+      let tempCustomers = prev.customers.map(c => c.id === oldLog.customerId ? { ...c, dueAmount: c.dueAmount - oldLog.dueAdded } : c);
       
       const finalProducts = tempProducts.map(p => p.id === updatedLog.productId ? { ...p, stock: p.stock - updatedLog.quantity } : p);
       const finalCustomers = tempCustomers.map(c => c.id === updatedLog.customerId ? { ...c, dueAmount: c.dueAmount + updatedLog.dueAdded } : c);
@@ -210,10 +210,8 @@ const App: React.FC = () => {
       const oldLog = prev.stockInLogs.find(l => l.id === updatedLog.id);
       if (!oldLog) return prev;
       
-      // Step 1: Temporarily revert old quantity to get base stock
       let tempProducts = prev.products.map(p => p.id === oldLog.productId ? { ...p, stock: Math.max(0, p.stock - oldLog.quantity) } : p);
       
-      // Step 2: Apply Weighted Average with the new purchase details
       const finalProducts = tempProducts.map(p => {
         if (p.id === updatedLog.productId) {
           const currentTotalValue = p.stock * p.costPrice;
@@ -254,8 +252,7 @@ const App: React.FC = () => {
       if (!oldLog) return prev;
 
       let tempCustomers = prev.customers.map(c => c.id === oldLog.customerId ? { ...c, dueAmount: c.dueAmount + oldLog.amount + (oldLog.discount || 0) } : c);
-      
-      const finalCustomers = tempCustomers.map(c => c.id === updatedLog.customerId ? { ...c, dueAmount: Math.max(0, c.dueAmount - (updatedLog.amount + (updatedLog.discount || 0))) } : c);
+      const finalCustomers = tempCustomers.map(c => c.id === updatedLog.customerId ? { ...c, dueAmount: c.dueAmount - (updatedLog.amount + (updatedLog.discount || 0)) } : c);
 
       return {
         ...prev,
@@ -319,8 +316,6 @@ const App: React.FC = () => {
                 const product = prev.products.find(p => p.id === entry.productId);
                 if (!product) return prev;
 
-                // Weighted Average Calculation:
-                // New Cost = ((Old Stock * Old Price) + (New Quantity * New Price)) / Total Stock
                 const currentTotalValue = product.stock * product.costPrice;
                 const incomingValue = entry.quantity * entry.unitPrice;
                 const totalNewStock = product.stock + entry.quantity;

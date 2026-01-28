@@ -27,7 +27,9 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
   const stats = useMemo(() => {
     const totalSales = data.stockOutLogs.reduce((acc, log) => acc + log.totalPrice, 0);
     const totalPurchase = data.stockInLogs.reduce((acc, log) => acc + log.totalPrice, 0);
-    const totalDue = data.customers.reduce((acc, c) => acc + c.dueAmount, 0);
+    
+    // Aggregate only positive dueAmounts as real "Money Owed"
+    const totalDue = data.customers.filter(c => c.dueAmount > 0).reduce((acc, c) => acc + c.dueAmount, 0);
     
     // Total Sales Discount
     const salesDiscount = data.stockOutLogs.reduce((acc, log) => acc + (log.discount || 0), 0);

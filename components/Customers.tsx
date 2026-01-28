@@ -39,17 +39,19 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
     title: lang === 'bn' ? 'কাস্টমার ও বাকির তালিকা' : 'Customer & Due List',
     search: lang === 'bn' ? 'কাস্টমার খুঁজুন (নাম বা ফোন)...' : 'Search Customer (Name or Phone)...',
     newBtn: lang === 'bn' ? 'নতুন কাস্টমার' : 'New Customer',
-    totalDue: lang === 'bn' ? 'মোট বাকি' : 'Total Due',
+    totalDue: lang === 'bn' ? 'মোট পাওনা (বাকি)' : 'Total Due',
+    totalAdvance: lang === 'bn' ? 'মোট অগ্রিম (জমা)' : 'Total Advance',
     name: lang === 'bn' ? 'নাম' : 'Name',
     phone: lang === 'bn' ? 'ফোন নাম্বার' : 'Phone Number',
-    due: lang === 'bn' ? 'মোট বাকি' : 'Total Due',
+    due: lang === 'bn' ? 'মোট পাওনা/জমা' : 'Total Due/Advance',
     action: lang === 'bn' ? 'অ্যাকশন' : 'Action',
     addTitle: lang === 'bn' ? 'নতুন কাস্টমার যোগ' : 'Add New Customer',
     editTitle: lang === 'bn' ? 'কাস্টমার আপডেট' : 'Update Customer',
-    payTitle: lang === 'bn' ? 'বাকি শোধ' : 'Pay Due',
+    payTitle: lang === 'bn' ? 'টাকা জমা নিন' : 'Payment Collection',
     payAmount: lang === 'bn' ? 'পরিশোধের পরিমাণ' : 'Payment Amount',
     payDiscount: lang === 'bn' ? 'ছাড়/মওকুফ' : 'Waiver/Discount',
     currentDue: lang === 'bn' ? 'বর্তমান বাকি' : 'Current Due',
+    currentAdvance: lang === 'bn' ? 'বর্তমান অগ্রিম' : 'Current Advance',
     cancel: lang === 'bn' ? 'বাতিল' : 'Cancel',
     save: lang === 'bn' ? 'সংরক্ষণ করুন' : 'Save',
     payBtn: lang === 'bn' ? 'টাকা জমা নিন' : 'Confirm Payment',
@@ -73,15 +75,23 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
     price: lang === 'bn' ? 'দর' : 'Rate',
     paid: lang === 'bn' ? 'পরিশোধ' : 'Paid',
     total: lang === 'bn' ? 'মোট' : 'Total',
-    // Added missing 'qty' property to fix error in editingLog section
     qty: lang === 'bn' ? 'পরিমাণ' : 'Qty',
-    note: lang === 'bn' ? 'নোট / বিবরণ' : 'Note'
+    note: lang === 'bn' ? 'নোট / বিবরণ' : 'Note',
+    advanceLabel: lang === 'bn' ? 'ওগ্রিম (জমা)' : 'Advance',
+    dueLabel: lang === 'bn' ? 'বাকি (পাওনা)' : 'Due'
   };
 
   const filtered = data.customers.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     c.phone.includes(searchTerm)
   );
+
+  const stats = useMemo(() => {
+    return {
+      totalDue: data.customers.filter(c => c.dueAmount > 0).reduce((sum, c) => sum + c.dueAmount, 0),
+      totalAdvance: data.customers.filter(c => c.dueAmount < 0).reduce((sum, c) => sum + Math.abs(c.dueAmount), 0)
+    };
+  }, [data.customers]);
 
   const customerHistory = useMemo(() => {
     if (!historyCustomer) return [];
@@ -141,7 +151,7 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
         amount: paymentAmount,
         discount: paymentDiscount,
         date: new Date().toISOString().split('T')[0],
-        note: lang === 'bn' ? 'বাকি শোধ করা হয়েছে' : 'Payment received'
+        note: lang === 'bn' ? 'টাকা জমা নেওয়া হয়েছে' : 'Payment collected'
       };
       onPay(paymentLog);
     }
@@ -159,7 +169,7 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
   };
 
   const handleDeleteLogEntry = (log: any) => {
-    if (!confirm(lang === 'bn' ? "আপনি কি নিশ্চিত যে এই লেনদেনটি মুছে ফেলবেন? এটি করলে স্টক এবং খতিয়ান স্বয়ংক্রিয়ভাবে সমন্বয় (Reverse) হবে।" : "Are you sure? This will revert stock and dues.")) return;
+    if (!confirm(lang === 'bn' ? "আপনি কি নিশ্চিত যে এই লেনদেনটি মুছে ফেলবেন?" : "Are you sure?")) return;
     if (log.isSale) onDeleteLog(log.id);
     else onDeletePayment(log.id);
   };
@@ -177,7 +187,7 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
       const updated: StockOut = {
         ...editFormData,
         totalPrice: total,
-        dueAdded: Math.max(0, total - (editFormData.paidAmount || 0))
+        dueAdded: total - (editFormData.paidAmount || 0)
       };
       onUpdateLog(updated);
     } else {
@@ -215,17 +225,32 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
         </div>
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 no-print">
+          <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
+              <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t.totalDue}</p>
+                  <p className="text-xl font-black text-red-600">৳{stats.totalDue}</p>
+              </div>
+              <div className="w-10 h-10 bg-red-50 text-red-600 rounded-lg flex items-center justify-center">
+                  <i className="fas fa-arrow-up-right-from-square"></i>
+              </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
+              <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t.totalAdvance}</p>
+                  <p className="text-xl font-black text-emerald-600">৳{stats.totalAdvance}</p>
+              </div>
+              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center">
+                  <i className="fas fa-arrow-down-left-and-arrow-up-right-to-center"></i>
+              </div>
+          </div>
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden print-area">
         <div className="hidden print:block p-6 text-center border-b-2 border-emerald-100">
            <h1 className="text-3xl font-black text-emerald-800">FIRST STEP</h1>
            <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">{t.title}</p>
            <p className="text-xs text-gray-400 mt-1">{new Date().toLocaleString()}</p>
-        </div>
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center no-print">
-          <h3 className="text-lg font-bold text-gray-800">{t.title}</h3>
-          <span className="text-sm font-black text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-100">
-            {t.totalDue}: ৳{filtered.reduce((sum, c) => sum + c.dueAmount, 0)}
-          </span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -251,21 +276,24 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                   </td>
                   <td className="p-4 text-gray-500 font-medium">{c.phone}</td>
                   <td className="p-4 text-right">
-                    <span className={`px-3 py-1 rounded-full text-sm font-black ${c.dueAmount > 0 ? 'bg-red-100 text-red-600 border border-red-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'} print:bg-transparent print:border-none print:text-gray-900`}>
-                      ৳{c.dueAmount}
-                    </span>
+                    <div className="flex flex-col items-end">
+                      <span className={`px-3 py-1 rounded-full text-sm font-black ${c.dueAmount > 0 ? 'bg-red-100 text-red-600 border border-red-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'} print:bg-transparent print:border-none print:text-gray-900`}>
+                        ৳{Math.abs(c.dueAmount)}
+                      </span>
+                      <span className={`text-[10px] font-bold uppercase ${c.dueAmount > 0 ? 'text-red-400' : 'text-emerald-500'}`}>
+                        {c.dueAmount > 0 ? t.dueLabel : (c.dueAmount < 0 ? t.advanceLabel : '')}
+                      </span>
+                    </div>
                   </td>
                   <td className="p-4 text-center no-print">
                     <div className="flex justify-center gap-1">
-                      {c.dueAmount > 0 && (
-                        <button 
-                          onClick={() => { setPayingCustomer(c); setPaymentAmount(c.dueAmount); setPaymentDiscount(0); setShowPayModal(true); }}
-                          className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
-                          title={t.payTitle}
-                        >
-                          <i className="fas fa-hand-holding-dollar"></i>
-                        </button>
-                      )}
+                      <button 
+                        onClick={() => { setPayingCustomer(c); setPaymentAmount(c.dueAmount > 0 ? c.dueAmount : 0); setPaymentDiscount(0); setShowPayModal(true); }}
+                        className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                        title={t.payTitle}
+                      >
+                        <i className="fas fa-hand-holding-dollar"></i>
+                      </button>
                       <button 
                         onClick={() => { 
                           setEditingCustomer(c); 
@@ -291,12 +319,7 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
           </table>
           {filtered.length === 0 && <p className="text-center py-10 text-gray-400 font-bold italic">{t.noData}</p>}
         </div>
-        <div className="hidden print:flex justify-end p-6 bg-gray-50 border-t-2 border-emerald-100">
-           <span className="font-black text-gray-700">{t.totalDue}: ৳{filtered.reduce((sum, c) => sum + c.dueAmount, 0)}</span>
-        </div>
       </div>
-
-      {/* --- ALL MODALS BELOW --- */}
 
       {showHistoryModal && historyCustomer && (
         <div className="fixed inset-0 bg-emerald-900/60 backdrop-blur-sm flex items-center justify-center p-0 md:p-4 z-50 overflow-y-auto no-print">
@@ -329,7 +352,6 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                     <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1">{t.endDate}</label>
                     <input type="date" value={ledgerEndDate} onChange={e => setLedgerEndDate(e.target.value)} className="w-full border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
-                <button onClick={() => { setLedgerStartDate(''); setLedgerEndDate(''); }} className="p-2 bg-white text-red-500 border rounded-lg hover:bg-red-50 transition"><i className="fas fa-undo"></i></button>
             </div>
             <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar">
               <table className="w-full text-left text-sm">
@@ -370,8 +392,10 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
               </table>
             </div>
             <div className="pt-4 border-t flex justify-between items-center bg-gray-50 -mx-6 -mb-6 p-6 rounded-b-2xl">
-              <span className="text-sm font-black text-gray-500 uppercase tracking-widest">{t.currentDue}</span>
-              <span className="text-2xl font-black text-red-600 bg-white px-4 py-2 rounded-xl border-2 border-red-100 shadow-sm">৳{historyCustomer.dueAmount}</span>
+              <span className="text-sm font-black text-gray-500 uppercase tracking-widest">{historyCustomer.dueAmount >= 0 ? t.currentDue : t.currentAdvance}</span>
+              <span className={`text-2xl font-black bg-white px-4 py-2 rounded-xl border-2 shadow-sm ${historyCustomer.dueAmount >= 0 ? 'text-red-600 border-red-100' : 'text-emerald-600 border-emerald-100'}`}>
+                  ৳{Math.abs(historyCustomer.dueAmount)}
+              </span>
             </div>
           </div>
         </div>
@@ -394,7 +418,7 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                 <input required type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full border-2 border-gray-100 p-3 rounded-xl font-bold outline-none focus:border-emerald-500 bg-gray-50 text-gray-800" />
               </div>
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase mb-1 tracking-wider ml-1">{t.due} (৳)</label>
+                <label className="block text-xs font-black text-gray-400 uppercase mb-1 tracking-wider ml-1">{t.due} (৳) (জমা হলে মাইনাস দিন)</label>
                 <input type="number" value={formData.dueAmount} onChange={e => setFormData({...formData, dueAmount: Number(e.target.value)})} className="w-full border-2 border-gray-100 p-3 rounded-xl font-bold outline-none focus:border-emerald-500 bg-gray-50 text-gray-800" />
               </div>
               <div className="flex gap-4 mt-8 pt-2">
@@ -419,15 +443,21 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
             <form onSubmit={handlePayment} className="space-y-4 text-left">
               <div>
                 <label className="block text-xs font-black text-gray-400 uppercase mb-1 ml-1 tracking-wider">{t.payAmount}</label>
-                <input required type="number" max={payingCustomer.dueAmount} value={paymentAmount} onChange={e => setPaymentAmount(Number(e.target.value))} className="w-full border-2 border-emerald-100 p-3 rounded-xl font-black text-emerald-700 outline-none focus:border-emerald-500 text-xl" />
+                <input required type="number" value={paymentAmount} onChange={e => setPaymentAmount(Number(e.target.value))} className="w-full border-2 border-emerald-100 p-3 rounded-xl font-black text-emerald-700 outline-none focus:border-emerald-500 text-xl" />
               </div>
               <div>
                 <label className="block text-xs font-black text-emerald-600 uppercase mb-1 ml-1 tracking-wider">{t.payDiscount}</label>
-                <input type="number" placeholder="0" max={payingCustomer.dueAmount - paymentAmount} value={paymentDiscount || ''} onChange={e => setPaymentDiscount(Number(e.target.value))} className="w-full border-2 border-emerald-50 p-3 rounded-xl font-black text-emerald-600 outline-none focus:border-emerald-500" />
+                <input type="number" placeholder="0" value={paymentDiscount || ''} onChange={e => setPaymentDiscount(Number(e.target.value))} className="w-full border-2 border-emerald-50 p-3 rounded-xl font-black text-emerald-600 outline-none focus:border-emerald-500" />
               </div>
-              <div className="p-3 bg-red-50 text-red-600 rounded-lg text-xs font-bold text-center">
-                {lang === 'bn' ? 'মোট মওকুফ হবে:' : 'Total reduction:'} ৳{paymentAmount + paymentDiscount}
+              
+              {/* Contextual helper for the user */}
+              <div className="p-3 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold text-center border border-blue-100">
+                  {lang === 'bn' ? 'বর্তমান ব্যালেন্স:' : 'Current Balance:'} ৳{Math.abs(payingCustomer.dueAmount)} ({payingCustomer.dueAmount > 0 ? t.dueLabel : t.advanceLabel})<br/>
+                  <span className="text-emerald-600">
+                    {lang === 'bn' ? 'নতুন জমা হবে:' : 'New deposit:'} ৳{paymentAmount + paymentDiscount}
+                  </span>
               </div>
+
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowPayModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-black">{t.cancel}</button>
                 <button type="submit" className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-black shadow-lg">{t.payBtn}</button>
