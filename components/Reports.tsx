@@ -85,7 +85,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
       const updated: StockOut = {
         ...editFormData,
         totalPrice: total,
-        dueAdded: total - (editFormData.paidAmount || 0) // Removed Math.max(0, ...) to support advance
+        dueAdded: total - (editFormData.paidAmount || 0)
       };
       onUpdateStockOut(updated);
     }
@@ -96,7 +96,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 no-print">
         <h3 className="text-lg font-black text-emerald-900 mb-4 flex items-center gap-2">
-          <i className="fas fa-filter text-emerald-600"></i> {t.filterTitle}
+          <i className="fas fa-sliders text-emerald-600"></i> {t.filterTitle}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
@@ -120,7 +120,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
               onClick={handlePrint} 
               className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-black hover:bg-emerald-700 transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/10"
             >
-              <i className="fas fa-print"></i> {t.print}
+              <i className="fas fa-file-export"></i> {t.print}
             </button>
           </div>
         </div>
@@ -159,7 +159,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
                 <tr key={log.id} className="text-sm hover:bg-emerald-50/30 transition-colors">
                   <td className="p-4 whitespace-nowrap font-medium text-gray-600">{log.date}</td>
                   <td className="p-4">
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${log.type === 'stockIn' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${log.type === 'stockIn' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
                       {log.typeLabel}
                     </span>
                   </td>
@@ -168,12 +168,12 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
                   <td className="p-4 font-black text-gray-600">{log.quantity} {log.productUnit}</td>
                   <td className="p-4 text-right">
                      <span className="font-black text-gray-900">৳{log.totalPrice}</span>
-                     {log.discount > 0 && <p className="text-[9px] text-red-500 font-bold italic">(-৳{log.discount} {t.discount})</p>}
+                     {log.discount > 0 && <p className="text-[9px] text-rose-500 font-bold italic">(-৳{log.discount} {t.discount})</p>}
                   </td>
                   <td className="p-4 text-center no-print">
                     <div className="flex justify-center gap-1">
-                      <button onClick={() => { setEditingLog(log); setEditFormData({...log}); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition" title="Edit"><i className="fas fa-edit"></i></button>
-                      <button onClick={() => { if(confirm('মুছে ফেলতে চান?')) log.type === 'stockIn' ? onDeleteStockIn(log.id) : onDeleteStockOut(log.id) }} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition" title="Delete"><i className="fas fa-trash-alt"></i></button>
+                      <button onClick={() => { setEditingLog(log); setEditFormData({...log}); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition" title="Edit"><i className="fas fa-pen-to-square"></i></button>
+                      <button onClick={() => { if(confirm('মুছে ফেলতে চান?')) log.type === 'stockIn' ? onDeleteStockIn(log.id) : onDeleteStockOut(log.id) }} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition" title="Delete"><i className="fas fa-trash-can"></i></button>
                     </div>
                   </td>
                 </tr>
@@ -182,7 +182,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
           </table>
           {filteredLogs.length === 0 && (
             <div className="p-20 text-center">
-               <div className="text-gray-200 text-6xl mb-4"><i className="fas fa-folder-open"></i></div>
+               <div className="text-gray-200 text-6xl mb-4"><i className="fas fa-file-waveform"></i></div>
                <p className="text-gray-400 font-black italic">{lang === 'bn' ? 'কোনো ডাটা পাওয়া যায়নি' : 'No transaction data available'}</p>
             </div>
           )}
@@ -203,7 +203,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
         <div className="fixed inset-0 bg-emerald-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] no-print">
           <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl animate-scale-in">
             <h3 className="text-xl font-black text-emerald-900 mb-6 flex items-center gap-2 border-b border-gray-100 pb-4">
-               <i className="fas fa-edit text-emerald-600"></i> {t.editTitle}
+               <i className="fas fa-file-pen text-emerald-600"></i> {t.editTitle}
             </h3>
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">

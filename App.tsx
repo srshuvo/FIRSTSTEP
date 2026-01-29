@@ -1,17 +1,18 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { User, UserRole, AppData, Product, Customer, Supplier, StockIn, StockOut, PaymentLog } from './types';
+import { User, UserRole, AppData, Product, Customer, Supplier, StockIn, StockOut, PaymentLog, Category } from './types';
 import { INITIAL_DATA } from './constants';
 import Dashboard from './components/Dashboard';
 import Inventory from './components/Inventory';
-import Sales from './components/Sales';
-import Purchase from './components/Purchase';
+import Transactions from './components/Transactions';
 import Reports from './components/Reports';
 import Customers from './components/Customers';
 import Suppliers from './components/Suppliers';
 import Navbar from './components/Navbar';
 import Login from './components/Login';
+import LanguageSwitcher from './components/LanguageSwitcher';
+import ChatBot from './components/ChatBot';
 
 const SUPABASE_URL = 'https://qwopfalqhkkjkxqpbloa.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3b3BmYWxxaGtramt4cXBibG9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5OTQxMDIsImV4cCI6MjA4NDU3MDEwMn0.QyCarDEwYaH6dxEhhTgf5hiZab1ylv6P_06uXtYR_s0';
@@ -25,10 +26,10 @@ const App: React.FC = () => {
   const [data, setData] = useState<AppData>(INITIAL_DATA);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'inventory' | 'sales' | 'purchase' | 'reports' | 'customers' | 'suppliers'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'inventory' | 'transactions' | 'reports' | 'customers' | 'suppliers'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  const [lastDeleted, setLastDeleted] = useState<{ type: string, item: any } | null>(null);
+  const [lastDeleted, setLastDeleted] = useState<{ type: string, item: any, label: string } | null>(null);
   const undoTimeoutRef = useRef<any>(null);
 
   useEffect(() => {
@@ -69,6 +70,7 @@ const App: React.FC = () => {
       if (cloudRow) {
         const cloudData = cloudRow.data;
         if (!cloudData.paymentLogs) cloudData.paymentLogs = [];
+        if (!cloudData.categories) cloudData.categories = [];
         setData(cloudData);
       } else {
         await syncToCloud(INITIAL_DATA);
@@ -109,20 +111,33 @@ const App: React.FC = () => {
     }
   }, [data, user, loading]);
 
-  const showUndo = (type: string, item: any) => {
-    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
-    setLastDeleted({ type, item });
-    undoTimeoutRef.current = setTimeout(() => setLastDeleted(null), 5000);
-  };
-
   const handleUndo = () => {
     if (!lastDeleted) return;
     const { type, item } = lastDeleted;
     setData(prev => {
       let newData = { ...prev };
-      if (type === 'product') newData.products = [item, ...prev.products];
-      else if (type === 'customer') newData.customers = [item, ...prev.customers];
-      else if (type === 'supplier') newData.suppliers = [item, ...prev.suppliers];
+      if (type === 'product') {
+        newData.products = [item, ...prev.products];
+      } else if (type === 'customer') {
+        newData.customers = [item, ...prev.customers];
+      } else if (type === 'supplier') {
+        newData.suppliers = [item, ...prev.suppliers];
+      } else if (type === 'stockIn') {
+        newData.stockInLogs = [item, ...prev.stockInLogs];
+        newData.products = prev.products.map(p => p.id === item.productId ? { ...p, stock: p.stock + item.quantity } : p);
+      } else if (type === 'stockOut') {
+        newData.stockOutLogs = [item, ...prev.stockOutLogs];
+        newData.products = prev.products.map(p => p.id === item.productId ? { ...p, stock: p.stock - item.quantity } : p);
+        newData.customers = prev.customers.map(c => c.id === item.customerId ? { ...c, dueAmount: c.dueAmount + item.dueAdded } : c);
+      } else if (type === 'payment') {
+        newData.paymentLogs = [item, ...prev.paymentLogs];
+        newData.customers = prev.customers.map(c => c.id === item.customerId ? { ...c, dueAmount: c.dueAmount - (item.amount + (item.discount || 0)) } : c);
+      } else if (type === 'category') {
+        newData.categories = [...(prev.categories || []), item.category];
+        newData.products = prev.products.map(p => 
+          item.affectedProductIds.includes(p.id) ? { ...p, categoryId: item.category.id } : p
+        );
+      }
       return newData;
     });
     setLastDeleted(null);
@@ -131,7 +146,7 @@ const App: React.FC = () => {
   const deleteProduct = (id: string) => {
     setData(prev => {
       const itemToDelete = prev.products.find(p => p.id === id);
-      if (itemToDelete) showUndo('product', itemToDelete);
+      if (itemToDelete) setLastDeleted({ type: 'product', item: itemToDelete, label: itemToDelete.name });
       return { ...prev, products: prev.products.filter(p => p.id !== id) };
     });
   };
@@ -139,7 +154,7 @@ const App: React.FC = () => {
   const deleteCustomer = (id: string) => {
     setData(prev => {
       const itemToDelete = prev.customers.find(c => c.id === id);
-      if (itemToDelete) showUndo('customer', itemToDelete);
+      if (itemToDelete) setLastDeleted({ type: 'customer', item: itemToDelete, label: itemToDelete.name });
       return { ...prev, customers: prev.customers.filter(c => c.id !== id) };
     });
   };
@@ -147,7 +162,7 @@ const App: React.FC = () => {
   const deleteSupplier = (id: string) => {
     setData(prev => {
       const itemToDelete = prev.suppliers.find(s => s.id === id);
-      if (itemToDelete) showUndo('supplier', itemToDelete);
+      if (itemToDelete) setLastDeleted({ type: 'supplier', item: itemToDelete, label: itemToDelete.name });
       return { ...prev, suppliers: prev.suppliers.filter(s => s.id !== id) };
     });
   };
@@ -164,6 +179,7 @@ const App: React.FC = () => {
     setData(prev => {
       const log = prev.stockOutLogs.find(l => l.id === logId);
       if (!log) return prev;
+      setLastDeleted({ type: 'stockOut', item: log, label: `${log.productName} (${log.quantity})` });
       return {
         ...prev,
         stockOutLogs: prev.stockOutLogs.filter(l => l.id !== logId),
@@ -177,13 +193,10 @@ const App: React.FC = () => {
     setData(prev => {
       const oldLog = prev.stockOutLogs.find(l => l.id === updatedLog.id);
       if (!oldLog) return prev;
-      
       let tempProducts = prev.products.map(p => p.id === oldLog.productId ? { ...p, stock: p.stock + oldLog.quantity } : p);
       let tempCustomers = prev.customers.map(c => c.id === oldLog.customerId ? { ...c, dueAmount: c.dueAmount - oldLog.dueAdded } : c);
-      
       const finalProducts = tempProducts.map(p => p.id === updatedLog.productId ? { ...p, stock: p.stock - updatedLog.quantity } : p);
       const finalCustomers = tempCustomers.map(c => c.id === updatedLog.customerId ? { ...c, dueAmount: c.dueAmount + updatedLog.dueAdded } : c);
-      
       return {
         ...prev,
         stockOutLogs: prev.stockOutLogs.map(l => l.id === updatedLog.id ? updatedLog : l),
@@ -197,6 +210,7 @@ const App: React.FC = () => {
     setData(prev => {
       const log = prev.stockInLogs.find(l => l.id === logId);
       if (!log) return prev;
+      setLastDeleted({ type: 'stockIn', item: log, label: `${log.productName} (${log.quantity})` });
       return {
         ...prev,
         stockInLogs: prev.stockInLogs.filter(l => l.id !== logId),
@@ -209,9 +223,7 @@ const App: React.FC = () => {
     setData(prev => {
       const oldLog = prev.stockInLogs.find(l => l.id === updatedLog.id);
       if (!oldLog) return prev;
-      
       let tempProducts = prev.products.map(p => p.id === oldLog.productId ? { ...p, stock: Math.max(0, p.stock - oldLog.quantity) } : p);
-      
       const finalProducts = tempProducts.map(p => {
         if (p.id === updatedLog.productId) {
           const currentTotalValue = p.stock * p.costPrice;
@@ -220,12 +232,10 @@ const App: React.FC = () => {
           const avgPrice = newTotalStock > 0 
             ? Number(((currentTotalValue + incomingValue) / newTotalStock).toFixed(2)) 
             : updatedLog.unitPrice;
-          
           return { ...p, stock: newTotalStock, costPrice: avgPrice };
         }
         return p;
       });
-      
       return {
         ...prev,
         stockInLogs: prev.stockInLogs.map(l => l.id === updatedLog.id ? updatedLog : l),
@@ -238,6 +248,7 @@ const App: React.FC = () => {
     setData(prev => {
       const log = prev.paymentLogs.find(l => l.id === logId);
       if (!log) return prev;
+      setLastDeleted({ type: 'payment', item: log, label: `৳${log.amount}` });
       return {
         ...prev,
         paymentLogs: prev.paymentLogs.filter(l => l.id !== logId),
@@ -248,18 +259,42 @@ const App: React.FC = () => {
 
   const updatePaymentLog = (updatedLog: PaymentLog) => {
     setData(prev => {
-      const oldLog = prev.paymentLogs.find(l => l.id === updatedLog.id);
-      if (!oldLog) return prev;
-
-      let tempCustomers = prev.customers.map(c => c.id === oldLog.customerId ? { ...c, dueAmount: c.dueAmount + oldLog.amount + (oldLog.discount || 0) } : c);
+      // Renamed 'oldLog' to 'log' to resolve the 'log' not found error and ensure consistent naming.
+      const log = prev.paymentLogs.find(l => l.id === updatedLog.id);
+      if (!log) return prev;
+      let tempCustomers = prev.customers.map(c => c.id === log.customerId ? { ...c, dueAmount: c.dueAmount + log.amount + (log.discount || 0) } : c);
       const finalCustomers = tempCustomers.map(c => c.id === updatedLog.customerId ? { ...c, dueAmount: c.dueAmount - (updatedLog.amount + (updatedLog.discount || 0)) } : c);
-
       return {
         ...prev,
         paymentLogs: prev.paymentLogs.map(l => l.id === updatedLog.id ? updatedLog : l),
         customers: finalCustomers
       };
     });
+  };
+
+  const addCategory = (cat: Category) => setData(prev => ({ ...prev, categories: [...(prev.categories || []), cat] }));
+  const updateCategory = (cat: Category) => setData(prev => ({ ...prev, categories: (prev.categories || []).map(c => c.id === cat.id ? cat : c) }));
+  
+  const deleteCategory = (id: string) => {
+    setData(prev => {
+      const catToDelete = (prev.categories || []).find(c => c.id === id);
+      if (catToDelete) {
+        const affectedProductIds = prev.products.filter(p => p.categoryId === id).map(p => p.id);
+        setLastDeleted({ type: 'category', item: { category: catToDelete, affectedProductIds }, label: catToDelete.name });
+      }
+      return {
+        ...prev,
+        categories: (prev.categories || []).filter(c => c.id !== id),
+        products: prev.products.map(p => p.categoryId === id ? { ...p, categoryId: undefined } : p)
+      };
+    });
+  };
+
+  const bulkUpdateProductCategory = (catId: string | undefined, productIds: string[]) => {
+    setData(prev => ({
+      ...prev,
+      products: prev.products.map(p => productIds.includes(p.id) ? { ...p, categoryId: catId } : p)
+    }));
   };
 
   if (loading) {
@@ -272,7 +307,12 @@ const App: React.FC = () => {
   }
 
   if (!user) {
-    return <Login lang={lang} setLang={setLang} />;
+    return (
+      <>
+        <Login lang={lang} setLang={setLang} />
+        <LanguageSwitcher lang={lang} setLang={setLang} />
+      </>
+    );
   }
 
   return (
@@ -298,7 +338,7 @@ const App: React.FC = () => {
       />
       
       <main className="flex-1 p-4 md:p-8">
-        <div className="bg-white rounded-2xl shadow-sm min-h-[70vh] p-1 md:p-4 border border-gray-100">
+        <div className="bg-white rounded-2xl shadow-sm min-h-[70vh] p-1 md:p-4 border border-gray-100 relative">
           {currentPage === 'dashboard' && <Dashboard data={data} lang={lang} />}
           {currentPage === 'inventory' && (
             <Inventory 
@@ -306,44 +346,41 @@ const App: React.FC = () => {
               onAdd={(p) => setData(prev => ({ ...prev, products: [...prev.products, p] }))} 
               onUpdate={(p) => setData(prev => ({...prev, products: prev.products.map(pr => pr.id === p.id ? p : pr)}))} 
               onDelete={deleteProduct} 
+              onAddCategory={addCategory}
+              onUpdateCategory={updateCategory}
+              onDeleteCategory={deleteCategory}
+              onBulkCategoryUpdate={bulkUpdateProductCategory}
               lang={lang} 
             />
           )}
-          {currentPage === 'purchase' && (
-            <Purchase 
+          {currentPage === 'transactions' && (
+            <Transactions 
               data={data} 
-              onRecord={(entry) => setData(prev => {
+              onRecordPurchase={(entry) => setData(prev => {
                 const product = prev.products.find(p => p.id === entry.productId);
                 if (!product) return prev;
-
                 const currentTotalValue = product.stock * product.costPrice;
                 const incomingValue = entry.quantity * entry.unitPrice;
-                const totalNewStock = product.stock + entry.quantity;
-                const avgPrice = totalNewStock > 0 
-                  ? Number(((currentTotalValue + incomingValue) / totalNewStock).toFixed(2)) 
+                // Renamed 'totalNewStock' to 'newTotalStock' to fix the "Cannot find name 'newTotalStock'" error.
+                const newTotalStock = product.stock + entry.quantity;
+                const avgPrice = newTotalStock > 0 
+                  ? Number(((currentTotalValue + incomingValue) / newTotalStock).toFixed(2)) 
                   : entry.unitPrice;
-
                 return {
                   ...prev, 
                   products: prev.products.map(p => p.id === entry.productId 
-                    ? { ...p, stock: totalNewStock, costPrice: avgPrice } 
+                    ? { ...p, stock: newTotalStock, costPrice: avgPrice } 
                     : p
                   ),
                   stockInLogs: [entry, ...prev.stockInLogs]
                 };
               })} 
-              lang={lang} 
-            />
-          )}
-          {currentPage === 'sales' && (
-            <Sales 
-              data={data} 
-              onRecord={(entry) => setData(prev => ({
+              onRecordSale={(entry) => setData(prev => ({
                 ...prev,
                 products: prev.products.map(p => p.id === entry.productId ? { ...p, stock: p.stock - entry.quantity } : p),
                 customers: prev.customers.map(c => c.id === entry.customerId ? { ...c, dueAmount: c.dueAmount + entry.dueAdded } : c),
                 stockOutLogs: [entry, ...prev.stockOutLogs]
-              }))} 
+              }))}
               lang={lang} 
             />
           )}
@@ -386,18 +423,24 @@ const App: React.FC = () => {
       </main>
 
       {lastDeleted && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 z-[100] animate-bounce">
-          <span className="font-bold text-sm">
-            {lang === 'bn' ? 'মুছে ফেলা হয়েছে!' : 'Deleted!'}
-          </span>
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 z-[100] animate-bounce max-w-[90vw] md:max-w-md border border-gray-700">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase text-emerald-400 mb-0.5">
+              {lang === 'bn' ? 'মুছে ফেলা হয়েছে' : 'Deleted'}
+            </span>
+            <span className="font-bold text-sm truncate">{lastDeleted.label}</span>
+          </div>
           <button 
             onClick={handleUndo}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-xs font-black uppercase transition"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black uppercase transition shrink-0 shadow-lg"
           >
-            {lang === 'bn' ? 'পূর্বাবস্থায় ফেরান' : 'Undo'}
+            {lang === 'bn' ? 'ফেরান (Undo)' : 'Undo'}
           </button>
         </div>
       )}
+
+      <LanguageSwitcher lang={lang} setLang={setLang} />
+      <ChatBot data={data} lang={lang} />
     </div>
   );
 };

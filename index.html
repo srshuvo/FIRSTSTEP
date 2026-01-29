@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -11,12 +12,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700;800&display=swap');
       
+      :root {
+        --neon-emerald: #10b981;
+        --neon-glow: 0 0 10px rgba(16, 185, 129, 0.4);
+      }
+
       * { -webkit-tap-highlight-color: transparent; }
-      body { font-family: 'Hind Siliguri', sans-serif; overscroll-behavior-y: contain; background-color: #f9fafb; }
+      body { 
+        font-family: 'Hind Siliguri', sans-serif; 
+        overscroll-behavior-y: contain; 
+        background-color: #f8fafc; 
+        color: #1e293b;
+      }
       
-      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      .font-mono-tech { font-family: 'JetBrains Mono', monospace; }
+
+      ::-webkit-scrollbar { width: 5px; height: 5px; }
       ::-webkit-scrollbar-thumb { background: #065f46; border-radius: 10px; }
+      ::-webkit-scrollbar-track { background: #f1f5f9; }
+
+      .neon-border { border: 1px solid var(--neon-emerald); box-shadow: var(--neon-glow); }
+      .neon-text { text-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
+      .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
 
       @media print {
         @page { size: A4; margin: 15mm 10mm; }
@@ -30,8 +49,16 @@
       }
 
       .overflow-x-auto { -webkit-overflow-scrolling: touch; }
-      @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-      .animate-scale-in { animation: scaleIn 0.2s ease-out; }
+      @keyframes scaleIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+      .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+      
+      .tech-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+      }
+      .tech-icon:hover { transform: translateY(-2px) rotate(5deg); }
     </style>
 <script type="importmap">
 {
@@ -42,13 +69,14 @@
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
     "react/": "https://esm.sh/react@^19.2.4/",
     "react": "https://esm.sh/react@^19.2.4",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.93.1"
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.93.1",
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0"
   }
 }
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-<body class="text-gray-900 selection:bg-emerald-100 selection:text-emerald-900">
+<body class="selection:bg-emerald-100 selection:text-emerald-900">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>

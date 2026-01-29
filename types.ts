@@ -10,9 +10,15 @@ export interface User {
   role: UserRole;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+}
+
 export interface Product {
   id: string;
   name: string;
+  categoryId?: string;
   stock: number;
   unit: string;
   costPrice: number;
@@ -65,12 +71,13 @@ export interface PaymentLog {
   id: string;
   customerId: string;
   amount: number;
-  discount: number; // New field for payment-time waiver
+  discount: number;
   date: string;
   note: string;
 }
 
 export interface AppData {
+  categories: Category[];
   products: Product[];
   suppliers: Supplier[];
   customers: Customer[];
