@@ -28,9 +28,6 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
   const [ledgerStartDate, setLedgerStartDate] = useState('');
   const [ledgerEndDate, setLedgerEndDate] = useState('');
 
-  const [editingLog, setEditingLog] = useState<any | null>(null);
-  const [editFormData, setEditFormData] = useState<any>({});
-
   const [formData, setFormData] = useState({ name: '', phone: '', dueAmount: 0 });
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [paymentDiscount, setPaymentDiscount] = useState<number>(0);
@@ -76,7 +73,7 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
 
   const customerHistory = useMemo(() => {
     if (!historyCustomer) return [];
-    const sales = data.stockOutLogs.filter(l => l.customerId === historyCustomer.id).map(l => ({ ...l, type: t.saleType, isSale: true, raw: l }));
+    const sales = data.stockOutLogs.filter(l => l.customerId === historyCustomer.id).map(l => ({ ...l, type: t.saleType, isSale: true, raw: l, amount: l.totalPrice, details: l.productName }));
     const payments = (data.paymentLogs || []).filter(l => l.customerId === historyCustomer.id).map(l => ({ ...l, type: t.paymentType, isSale: false, raw: l, details: l.note || t.paymentType }));
     let combined = [...sales, ...payments] as any[];
     if (ledgerStartDate) combined = combined.filter(l => l.date >= ledgerStartDate);
@@ -159,14 +156,14 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                   <td className="px-6 py-5 text-right">
                     <div className="flex flex-col items-end">
                       <span className={`px-4 py-1.5 rounded-xl text-xs font-black shadow-sm ${c.dueAmount > 0 ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>৳{Math.abs(c.dueAmount)}</span>
-                      <span className={`text-[9px] font-black uppercase mt-1 tracking-widest ${c.dueAmount > 0 ? 'text-rose-400' : 'text-emerald-500'}`}>{c.dueAmount > 0 ? t.dueLabel : t.advanceLabel}</span>
+                      <span className={`text-[9px] font-black uppercase mt-1 tracking-widest ${c.dueAmount > 0 ? t.dueLabel : t.advanceLabel}`}>{c.dueAmount > 0 ? t.dueLabel : t.advanceLabel}</span>
                     </div>
                   </td>
                   <td className="px-6 py-5 text-center no-print">
                     <div className="flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => { setPayingCustomer(c); setPaymentAmount(c.dueAmount > 0 ? c.dueAmount : 0); setShowPayModal(true); }} className="w-10 h-10 flex items-center justify-center text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-600 hover:text-white transition shadow-sm"><i className="fas fa-wallet"></i></button>
-                      <button onClick={() => { setEditingCustomer(c); setFormData({ name: c.name, phone: c.phone, dueAmount: c.dueAmount }); setShowModal(true); }} className="w-10 h-10 flex items-center justify-center text-blue-500 bg-blue-50 rounded-xl hover:bg-blue-500 hover:text-white transition shadow-sm"><i className="fas fa-user-pen"></i></button>
-                      <button onClick={() => setConfirmDelete({ id: c.id, name: c.name })} className="w-10 h-10 flex items-center justify-center text-rose-500 bg-rose-50 rounded-xl hover:bg-rose-500 hover:text-white transition shadow-sm"><i className="fas fa-trash-can"></i></button>
+                      <button onClick={() => { setPayingCustomer(c); setPaymentAmount(c.dueAmount > 0 ? c.dueAmount : 0); setShowPayModal(true); }} className="w-10 h-10 flex items-center justify-center text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-600 hover:text-white transition shadow-sm" title={t.payTitle}><i className="fas fa-wallet"></i></button>
+                      <button onClick={() => { setEditingCustomer(c); setFormData({ name: c.name, phone: c.phone, dueAmount: c.dueAmount }); setShowModal(true); }} className="w-10 h-10 flex items-center justify-center text-blue-500 bg-blue-50 rounded-xl hover:bg-blue-500 hover:text-white transition shadow-sm" title={t.editTitle}><i className="fas fa-user-pen"></i></button>
+                      <button onClick={() => setConfirmDelete({ id: c.id, name: c.name })} className="w-10 h-10 flex items-center justify-center text-rose-500 bg-rose-50 rounded-xl hover:bg-rose-500 hover:text-white transition shadow-sm" title={t.deleteConfirm}><i className="fas fa-trash-can"></i></button>
                     </div>
                   </td>
                 </tr>
@@ -176,6 +173,66 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
           {filtered.length === 0 && <div className="p-20 text-center flex flex-col items-center"><i className="fas fa-address-book text-gray-100 text-6xl mb-4"></i><p className="text-gray-400 font-black italic">{t.noData}</p></div>}
         </div>
       </div>
+
+      {/* Add/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-emerald-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
+          <form onSubmit={handleSubmit} className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md space-y-6 animate-scale-in">
+             <div className="flex justify-between items-center border-b border-gray-50 pb-4">
+                <h3 className="text-xl font-black text-emerald-900 uppercase tracking-tighter">{editingCustomer ? t.editTitle : t.addTitle}</h3>
+                <button type="button" onClick={() => setShowModal(false)} className="text-gray-300 hover:text-rose-600 transition"><i className="fas fa-circle-xmark text-xl"></i></button>
+             </div>
+             <div className="space-y-4">
+                <div>
+                   <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{t.name}</label>
+                   <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold outline-none focus:border-emerald-500 transition" />
+                </div>
+                <div>
+                   <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{t.phone}</label>
+                   <input required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold outline-none focus:border-emerald-500 transition" />
+                </div>
+                {!editingCustomer && (
+                   <div>
+                      <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{t.due}</label>
+                      <input type="number" value={formData.dueAmount} onChange={e => setFormData({...formData, dueAmount: Number(e.target.value)})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold outline-none focus:border-emerald-500 transition" />
+                   </div>
+                )}
+             </div>
+             <div className="flex gap-4 pt-4">
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black uppercase text-xs tracking-widest">{t.cancel}</button>
+                <button type="submit" className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-emerald-900/20">{t.save}</button>
+             </div>
+          </form>
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      {showPayModal && payingCustomer && (
+        <div className="fixed inset-0 bg-emerald-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
+          <form onSubmit={handlePayment} className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md space-y-6 animate-scale-in">
+             <div className="flex justify-between items-center border-b border-gray-50 pb-4">
+                <h3 className="text-xl font-black text-emerald-900 uppercase tracking-tighter">{t.payTitle}</h3>
+                <button type="button" onClick={() => setShowPayModal(false)} className="text-gray-300 hover:text-rose-600 transition"><i className="fas fa-circle-xmark text-xl"></i></button>
+             </div>
+             <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100">
+                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Customer Name</p>
+                <p className="text-xl font-black text-emerald-900">{payingCustomer.name}</p>
+                <p className="text-xs font-bold text-emerald-600 mt-1">{t.due}: ৳{payingCustomer.dueAmount}</p>
+             </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div>
+                   <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{t.payAmount}</label>
+                   <input required type="number" value={paymentAmount} onChange={e => setPaymentAmount(Number(e.target.value))} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold outline-none focus:border-emerald-500 transition" />
+                </div>
+                <div>
+                   <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{t.payDiscount}</label>
+                   <input type="number" value={paymentDiscount} onChange={e => setPaymentDiscount(Number(e.target.value))} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold outline-none focus:border-emerald-500 transition" />
+                </div>
+             </div>
+             <button type="submit" className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-emerald-900/20 transition hover:bg-emerald-700 active:scale-95">{t.payBtn}</button>
+          </form>
+        </div>
+      )}
 
       {/* History Modal */}
       {showHistoryModal && historyCustomer && (
@@ -218,7 +275,20 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
         </div>
       )}
 
-      {/* Modals for Add/Pay/Delete omitted for brevity as they are already functional, keeping logic intact */}
+      {/* Delete Confirmation Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center space-y-5 animate-scale-in">
+             <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center text-4xl mx-auto"><i className="fas fa-trash-can"></i></div>
+             <h3 className="text-xl font-black text-gray-900">{t.deleteConfirm}</h3>
+             <p className="text-gray-500 font-bold">"{confirmDelete.name}"</p>
+             <div className="flex gap-3 pt-4">
+                <button onClick={() => setConfirmDelete(null)} className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black uppercase text-xs">Cancel</button>
+                <button onClick={() => { onDelete(confirmDelete.id); setConfirmDelete(null); }} className="flex-1 py-4 bg-rose-600 text-white rounded-2xl font-black uppercase text-xs">Delete</button>
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

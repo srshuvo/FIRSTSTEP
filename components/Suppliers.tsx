@@ -34,7 +34,8 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
     cancel: lang === 'bn' ? 'বাতিল' : 'Cancel',
     historyTitle: lang === 'bn' ? 'ক্রয় খতিয়ান (Purchase)' : 'Procurement History',
     printBtn: lang === 'bn' ? 'প্রিন্ট' : 'Print',
-    noData: lang === 'bn' ? 'কোনো সাপ্লায়ার নেই' : 'No records found'
+    noData: lang === 'bn' ? 'কোনো সাপ্লায়ার নেই' : 'No records found',
+    deleteConfirm: lang === 'bn' ? 'মুছে ফেলতে চান?' : 'Confirm Delete'
   };
 
   const filtered = data.suppliers.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.phone.includes(searchTerm));
@@ -49,6 +50,7 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
     if (editingSupplier) onUpdate({ ...editingSupplier, ...formData });
     else onAdd({ id: Math.random().toString(36).substr(2, 9), ...formData });
     setShowModal(false);
+    setEditingSupplier(null);
   };
 
   return (
@@ -91,6 +93,32 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
         </div>
       </div>
 
+      {/* Add/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
+          <form onSubmit={handleSubmit} className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md space-y-6 animate-scale-in">
+             <div className="flex justify-between items-center border-b border-gray-50 pb-4">
+                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">{editingSupplier ? t.editTitle : t.addTitle}</h3>
+                <button type="button" onClick={() => setShowModal(false)} className="text-gray-300 hover:text-rose-600 transition"><i className="fas fa-circle-xmark text-xl"></i></button>
+             </div>
+             <div className="space-y-4">
+                <div>
+                   <label className="block text-[10px] font-black uppercase text-slate-400 mb-1 ml-1">{t.name}</label>
+                   <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold outline-none focus:border-slate-900 transition" />
+                </div>
+                <div>
+                   <label className="block text-[10px] font-black uppercase text-slate-400 mb-1 ml-1">{t.phone}</label>
+                   <input required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold outline-none focus:border-slate-900 transition" />
+                </div>
+             </div>
+             <div className="flex gap-4 pt-4">
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black uppercase text-xs tracking-widest">{t.cancel}</button>
+                <button type="submit" className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-slate-950/20">{t.save}</button>
+             </div>
+          </form>
+        </div>
+      )}
+
       {/* History Modal */}
       {showHistoryModal && historySupplier && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
@@ -125,7 +153,20 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
         </div>
       )}
 
-      {/* Add/Edit Modal (Logic remains intact, just updated icons) */}
+      {/* Delete Confirmation Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center space-y-5 animate-scale-in">
+             <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center text-4xl mx-auto"><i className="fas fa-trash-can"></i></div>
+             <h3 className="text-xl font-black text-gray-900">{t.deleteConfirm}</h3>
+             <p className="text-gray-500 font-bold">"{confirmDelete.name}"</p>
+             <div className="flex gap-3 pt-4">
+                <button onClick={() => setConfirmDelete(null)} className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black uppercase text-xs">Cancel</button>
+                <button onClick={() => { onDelete(confirmDelete.id); setConfirmDelete(null); }} className="flex-1 py-4 bg-rose-600 text-white rounded-2xl font-black uppercase text-xs">Delete</button>
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

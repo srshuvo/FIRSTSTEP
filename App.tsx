@@ -32,6 +32,19 @@ const App: React.FC = () => {
   const [lastDeleted, setLastDeleted] = useState<{ type: string, item: any, label: string } | null>(null);
   const undoTimeoutRef = useRef<any>(null);
 
+  // Undo notification auto-hide logic (10 seconds)
+  useEffect(() => {
+    if (lastDeleted) {
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = setTimeout(() => {
+        setLastDeleted(null);
+      }, 10000); // 10 seconds
+    }
+    return () => {
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    };
+  }, [lastDeleted]);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -259,7 +272,6 @@ const App: React.FC = () => {
 
   const updatePaymentLog = (updatedLog: PaymentLog) => {
     setData(prev => {
-      // Renamed 'oldLog' to 'log' to resolve the 'log' not found error and ensure consistent naming.
       const log = prev.paymentLogs.find(l => l.id === updatedLog.id);
       if (!log) return prev;
       let tempCustomers = prev.customers.map(c => c.id === log.customerId ? { ...c, dueAmount: c.dueAmount + log.amount + (log.discount || 0) } : c);
@@ -361,7 +373,6 @@ const App: React.FC = () => {
                 if (!product) return prev;
                 const currentTotalValue = product.stock * product.costPrice;
                 const incomingValue = entry.quantity * entry.unitPrice;
-                // Renamed 'totalNewStock' to 'newTotalStock' to fix the "Cannot find name 'newTotalStock'" error.
                 const newTotalStock = product.stock + entry.quantity;
                 const avgPrice = newTotalStock > 0 
                   ? Number(((currentTotalValue + incomingValue) / newTotalStock).toFixed(2)) 
