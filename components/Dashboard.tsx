@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
 import { AppData, Product, StockOut } from '../types';
 
@@ -79,7 +78,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
           month: 'long', 
           year: 'numeric' 
         };
-        // Explicitly requesting the official Bengali calendar (Bongabdo)
+        // Using 'bn-BD' with 'u-ca-beng' ensures the official Revised Bengali Calendar (Bongabdo)
         const formatter = new Intl.DateTimeFormat(`${locale}-u-ca-${calendar}`, options);
         return formatter.format(date);
       } catch (e) {
@@ -120,6 +119,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
 
   return (
     <div className="space-y-8 animate-scale-in">
+      {/* Header Row */}
       <div className="flex flex-col xl:flex-row justify-between items-center gap-6">
         <div className="flex flex-col justify-center">
           <h1 className="text-4xl font-black text-slate-900 leading-none tracking-tighter neon-text uppercase">FIRST STEP</h1>
@@ -130,6 +130,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         </div>
 
         <div className="no-print flex flex-wrap items-center gap-3">
+          {/* Realtime Digital Clock */}
           <div className="bg-slate-950 text-emerald-400 px-6 py-4 rounded-[2.5rem] shadow-2xl flex items-center gap-5 border-2 border-slate-800 relative overflow-hidden group min-h-[85px]">
             <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-emerald-500/10 transition-all"></div>
             <div className="flex flex-col items-center">
@@ -156,6 +157,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         </div>
       </div>
 
+      {/* Date Filter */}
       <div className="bg-white/80 backdrop-blur-md p-3 rounded-[3rem] shadow-sm border border-slate-100 flex flex-wrap gap-2 items-center no-print sticky top-4 z-20">
         <div className="flex items-center gap-2 px-5 py-2.5 bg-slate-950 rounded-full border border-slate-800 mr-2">
            <i className="fas fa-microchip text-emerald-500 text-[10px] animate-pulse"></i>
@@ -172,6 +174,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         ))}
       </div>
 
+      {/* Stats Grid */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         <KPICard title={t.sales} value={`৳${stats.totalSales}`} icon="fa-wallet" color="blue" />
         <KPICard title={t.purchase} value={`৳${stats.totalPurchase}`} icon="fa-cart-flatbed" color="orange" />
@@ -180,6 +183,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         <KPICard title={t.stockVal} value={`৳${stats.totalStockValue}`} icon="fa-boxes-stacked" color="indigo" />
       </section>
 
+      {/* Tables Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white p-8 rounded-[3.5rem] shadow-sm border border-slate-100 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
