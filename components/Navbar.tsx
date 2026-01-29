@@ -30,7 +30,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, onLogout, 
           <div className="w-14 h-14 bg-emerald-600 rounded-3xl flex items-center justify-center text-2xl mx-auto mb-4 border-2 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-transform hover:scale-110">
             <i className="fas fa-gem"></i>
           </div>
-          <h2 className="text-2xl font-black tracking-tighter neon-text">FIRST STEP</h2>
+          <h2 className="text-2xl font-black tracking-tighter neon-text uppercase">FIRST STEP</h2>
           <p className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.3em] mt-2 opacity-80">Digital Business Suite</p>
         </div>
 
@@ -74,32 +74,28 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, onLogout, 
             <i className="fas fa-power-off"></i> {lang === 'bn' ? 'লগ আউট' : 'Disconnect'}
           </button>
           
-          {/* Neon Credit Card */}
-          <div className="pt-2">
-            <a 
-              href="https://www.facebook.com/shuvo.moni.16623" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="relative group block p-4 rounded-[1.5rem] overflow-hidden transition-all duration-500 bg-slate-900 border border-emerald-500/30 hover:border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)] hover:shadow-[0_0_25px_rgba(16,185,129,0.4)]"
-            >
-              {/* Glowing Background Animation */}
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              
-              <div className="relative flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-[8px] font-black text-emerald-500/60 uppercase tracking-[0.3em] mb-1">Developer</span>
-                  <span className="text-[11px] font-black text-white uppercase tracking-wider group-hover:text-emerald-400 transition-colors">
-                    DESIGNED BY <span className="text-emerald-400">shuvo</span>
-                  </span>
-                </div>
-                <div className="w-8 h-8 rounded-xl bg-emerald-600/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-inner">
-                  <i className="fab fa-facebook-f text-xs"></i>
-                </div>
-              </div>
-
-              {/* Animated Pulse Ring */}
-              <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-emerald-500/10 rounded-full blur-xl group-hover:animate-pulse"></div>
-            </a>
+          {/* Enhanced Neon Credit Card */}
+          <div className="pt-2 px-1">
+             <a 
+               href="https://www.facebook.com/shuvo.moni.16623" 
+               target="_blank" 
+               rel="noopener noreferrer"
+               className="group block relative p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/20 hover:border-emerald-500 transition-all duration-500 overflow-hidden shadow-[0_0_15px_rgba(16,185,129,0.05)] hover:shadow-[0_0_25px_rgba(16,185,129,0.3)]"
+             >
+               <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+               <div className="relative flex flex-col items-center justify-center">
+                 <div className="flex items-center gap-2 mb-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981]"></span>
+                    <span className="text-[8px] font-black tracking-[0.4em] text-emerald-500 uppercase">Lead Developer</span>
+                 </div>
+                 <span className="text-[11px] font-black tracking-widest text-white uppercase group-hover:text-emerald-300 transition-colors">
+                   DESIGNED BY <span className="text-emerald-400 neon-text">shuvo</span>
+                 </span>
+                 <div className="mt-2 text-emerald-500/40 group-hover:text-emerald-400 transition-all transform group-hover:translate-y-[-2px]">
+                    <i className="fab fa-facebook text-sm"></i>
+                 </div>
+               </div>
+             </a>
           </div>
         </div>
       </nav>
