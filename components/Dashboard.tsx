@@ -69,28 +69,49 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
   }, [data, dateFilter, customRange]);
 
   const fullDates = useMemo(() => {
-    const date = new Date();
+    const now = currentTime;
+    const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    const bnMonths = ["বৈশাখ", "জ্যৈষ্ঠ", "আষাঢ়", "শ্রাবণ", "ভাদ্র", "আশ্বিন", "কার্তিক", "অগ্রহায়ন", "পৌষ", "মাঘ", "ফাল্গুন", "চৈত্র"];
     
-    const getFormattedDate = (locale: string, calendar: string) => {
-      try {
-        const options: Intl.DateTimeFormatOptions = { 
-          day: 'numeric', 
-          month: 'long', 
-          year: 'numeric' 
-        };
-        // Using 'bn-BD' with 'u-ca-beng' ensures the official Revised Bengali Calendar (Bongabdo)
-        const formatter = new Intl.DateTimeFormat(`${locale}-u-ca-${calendar}`, options);
-        return formatter.format(date);
-      } catch (e) {
-        return date.toLocaleDateString(locale);
+    const toBn = (n: number | string) => n.toString().split('').map(d => bnDigits[parseInt(d)] || d).join('');
+
+    // Official Bangladesh Revised Bongabdo Logic
+    const getBongabdo = () => {
+      const year = now.getFullYear();
+      const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+      
+      // Bengali year starts on April 14
+      let start = new Date(year, 3, 14);
+      if (now < start) start.setFullYear(year - 1);
+      
+      const diffInDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      const bYear = (now < new Date(year, 3, 14) ? year - 594 : year - 593);
+      
+      // Revised Calendar (since 2019): First 6 months (31 days), Next 6 months (30 days, Falgun 31 in leap year)
+      const monthDays = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, isLeap ? 31 : 30, 30];
+      
+      let dayCount = diffInDays + 1;
+      let mIdx = 0;
+      for (const days of monthDays) {
+        if (dayCount <= days) break;
+        dayCount -= days;
+        mIdx++;
       }
+      
+      return `${toBn(dayCount)}-${bnMonths[mIdx]}-${toBn(bYear)}`;
     };
 
-    const en = getFormattedDate('en-GB', 'gregory');
-    const bn = getFormattedDate('bn-BD', 'beng'); // Correctly pulls Falgun 1431 etc.
-    const ar = getFormattedDate('bn-BD', 'islamic-umalqura');
+    const getGregorian = () => {
+      return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(now);
+    };
+
+    const getHijri = () => {
+      // Using International API for Hijri fallback
+      const hijriOptions: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+      return new Intl.DateTimeFormat('bn-BD-u-ca-islamic-umalqura', hijriOptions).format(now);
+    };
     
-    return { en, bn, ar };
+    return { en: getGregorian(), bn: getBongabdo(), ar: getHijri() };
   }, [currentTime]);
 
   const formatClock = (date: Date) => {
@@ -113,13 +134,12 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
     filterLabel: lang === 'bn' ? 'ফিল্টার' : 'Filters',
     recentSales: lang === 'bn' ? 'সাম্প্রতিক বিক্রি' : 'Recent Sales',
     engCal: lang === 'bn' ? 'ইংরেজি' : 'English',
-    bngCal: lang === 'bn' ? 'বঙ্গাব্দ' : 'Bengali',
+    bngCal: lang === 'bn' ? 'বাংলা' : 'Bengali',
     hijCal: lang === 'bn' ? 'হিজরি' : 'Hijri'
   };
 
   return (
     <div className="space-y-8 animate-scale-in">
-      {/* Header Row */}
       <div className="flex flex-col xl:flex-row justify-between items-center gap-6">
         <div className="flex flex-col justify-center">
           <h1 className="text-4xl font-black text-slate-900 leading-none tracking-tighter neon-text uppercase">FIRST STEP</h1>
@@ -130,11 +150,10 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         </div>
 
         <div className="no-print flex flex-wrap items-center gap-3">
-          {/* Realtime Digital Clock */}
           <div className="bg-slate-950 text-emerald-400 px-6 py-4 rounded-[2.5rem] shadow-2xl flex items-center gap-5 border-2 border-slate-800 relative overflow-hidden group min-h-[85px]">
             <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-emerald-500/10 transition-all"></div>
             <div className="flex flex-col items-center">
-              <span className="text-[7px] font-black uppercase text-emerald-800 tracking-[0.4em] mb-1.5 leading-none">Realtime Sync</span>
+              <span className="text-[7px] font-black uppercase text-emerald-800 tracking-[0.4em] mb-1.5 leading-none">System Sync</span>
               <div className="flex items-baseline font-mono-tech text-3xl font-black leading-none tracking-tight">
                 <span className="drop-shadow-[0_0_12px_rgba(52,211,153,0.8)]">{clock.hours}</span>
                 <span className="mx-1 text-slate-700 animate-pulse">:</span>
@@ -157,7 +176,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         </div>
       </div>
 
-      {/* Date Filter */}
       <div className="bg-white/80 backdrop-blur-md p-3 rounded-[3rem] shadow-sm border border-slate-100 flex flex-wrap gap-2 items-center no-print sticky top-4 z-20">
         <div className="flex items-center gap-2 px-5 py-2.5 bg-slate-950 rounded-full border border-slate-800 mr-2">
            <i className="fas fa-microchip text-emerald-500 text-[10px] animate-pulse"></i>
@@ -174,7 +192,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         ))}
       </div>
 
-      {/* Stats Grid */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         <KPICard title={t.sales} value={`৳${stats.totalSales}`} icon="fa-wallet" color="blue" />
         <KPICard title={t.purchase} value={`৳${stats.totalPurchase}`} icon="fa-cart-flatbed" color="orange" />
@@ -183,7 +200,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         <KPICard title={t.stockVal} value={`৳${stats.totalStockValue}`} icon="fa-boxes-stacked" color="indigo" />
       </section>
 
-      {/* Tables Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white p-8 rounded-[3.5rem] shadow-sm border border-slate-100 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -254,13 +270,13 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
 
 const CalendarCard = ({ label, date, icon, glow }: { label: string, date: string, icon: string, glow?: boolean }) => {
   return (
-    <div className={`bg-slate-950 ${glow ? 'text-emerald-300 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.2)]' : 'text-emerald-400/80 border-slate-800 shadow-xl'} px-6 py-4 rounded-[2.5rem] border-2 flex flex-col items-center justify-center min-w-[155px] min-h-[85px] transition-all duration-300 hover:scale-105 group relative overflow-hidden`}>
+    <div className={`bg-slate-950 ${glow ? 'text-emerald-300 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'text-emerald-400/80 border-slate-800 shadow-xl'} px-6 py-4 rounded-[2.5rem] border-2 flex flex-col items-center justify-center min-w-[170px] min-h-[85px] transition-all duration-300 hover:scale-105 group relative overflow-hidden`}>
       <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-emerald-500/10 transition-all"></div>
       <div className="flex items-center gap-2 mb-2 opacity-60">
         <i className={`fas ${icon} text-[10px] drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]`}></i>
         <span className="text-[7px] font-black uppercase tracking-[0.3em]">{label}</span>
       </div>
-      <p className="text-[11px] font-black tracking-tighter text-center leading-tight drop-shadow-[0_0_8px_rgba(52,211,153,0.4)] whitespace-nowrap">{date}</p>
+      <p className="text-[12px] font-black tracking-tighter text-center leading-tight drop-shadow-[0_0_8px_rgba(52,211,153,0.4)] whitespace-nowrap">{date}</p>
     </div>
   );
 };
