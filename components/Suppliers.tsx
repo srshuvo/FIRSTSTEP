@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AppData, Supplier, StockIn } from '../types';
 
 interface SuppliersProps {
@@ -20,10 +19,22 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
   const [historySupplier, setHistorySupplier] = useState<Supplier | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [formData, setFormData] = useState({ name: '', phone: '' });
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   const t = {
     title: lang === 'bn' ? 'সাপ্লায়ার খাতা' : 'Supplier Directory',
-    search: lang === 'bn' ? 'নাম বা ফোন দিয়ে খুঁজুন...' : 'Search Suppliers...',
+    search: lang === 'bn' ? 'নাম বা ফোন দিয়ে খুঁজুন... (Alt+S)' : 'Search Suppliers... (Alt+S)',
     newBtn: lang === 'bn' ? 'নতুন সাপ্লায়ার' : 'New Vendor',
     name: lang === 'bn' ? 'নাম' : 'Supplier Name',
     phone: lang === 'bn' ? 'ফোন' : 'Phone',
@@ -58,7 +69,14 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 no-print">
         <div className="relative w-full md:w-96">
           <i className="fas fa-truck-moving absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-          <input type="text" placeholder={t.search} className="w-full pl-10 pr-4 py-3 border rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          <input 
+            ref={searchInputRef}
+            type="text" 
+            placeholder={t.search} 
+            className="w-full pl-10 pr-4 py-3 border rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold" 
+            value={searchTerm} 
+            onChange={e => setSearchTerm(e.target.value)} 
+          />
         </div>
         <div className="flex gap-2 w-full md:w-auto">
           <button onClick={() => window.print()} className="flex-1 bg-emerald-50 text-emerald-600 px-5 py-3 rounded-2xl font-black flex items-center justify-center gap-2 border border-emerald-100 hover:bg-emerald-100 transition"><i className="fas fa-print"></i> {t.printBtn}</button>
@@ -93,7 +111,6 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
           <form onSubmit={handleSubmit} className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md space-y-6 animate-scale-in">
@@ -119,7 +136,6 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
         </div>
       )}
 
-      {/* History Modal */}
       {showHistoryModal && historySupplier && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
           <div className="bg-white p-8 rounded-[3rem] w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] animate-scale-in">
@@ -153,7 +169,6 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
           <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center space-y-5 animate-scale-in">

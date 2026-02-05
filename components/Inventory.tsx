@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AppData, Product, Category } from '../types';
 
 interface InventoryProps {
@@ -22,6 +22,18 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
   const [selectedCatId, setSelectedCatId] = useState<string>('all');
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string; type: 'product' | 'category' } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   const [formData, setFormData] = useState({ 
     name: '', 
@@ -119,7 +131,14 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
           <div className="relative w-full md:w-96">
             <i className="fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            <input type="text" placeholder={lang === 'bn' ? 'খুঁজুন...' : 'Search...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold" />
+            <input 
+              ref={searchInputRef}
+              type="text" 
+              placeholder={lang === 'bn' ? 'খুঁজুন... (Alt+S)' : 'Search... (Alt+S)'} 
+              value={searchTerm} 
+              onChange={e => setSearchTerm(e.target.value)} 
+              className="w-full pl-10 pr-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold" 
+            />
           </div>
           <button onClick={() => { setEditing(null); setFormData({ name: '', categoryId: '', stock: 0, unit: 'Pcs', costPrice: 0, salePrice: 0, lowStockThreshold: 10 }); setShowModal(true); }} className="bg-emerald-600 text-white px-6 py-2 rounded-xl font-black uppercase text-xs tracking-widest shadow-lg hover:bg-emerald-700 transition">{lang === 'bn' ? 'নতুন পণ্য' : 'Add Product'}</button>
         </div>
@@ -153,7 +172,7 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
                   <td className="px-6 py-4 text-gray-500 font-bold">৳{p.costPrice.toLocaleString()}</td>
                   <td className="px-6 py-4 font-black text-emerald-600">৳{p.salePrice.toLocaleString()}</td>
                   <td className="px-6 py-4 text-center">
-                    <button onClick={() => { setEditing(p); setFormData({ ...p, categoryId: p.categoryId || '' }); setShowModal(true); }} className="text-blue-500 p-2"><i className="fas fa-edit"></i></button>
+                    <button onClick={() => { setEditing(p); setFormData({ ...p, categoryId: p.categoryId || '', lowStockThreshold: p.lowStockThreshold || 10 }); setShowModal(true); }} className="text-blue-500 p-2"><i className="fas fa-edit"></i></button>
                     <button onClick={() => setConfirmDelete({ id: p.id, name: p.name, type: 'product' })} className="text-red-500 p-2"><i className="fas fa-trash-can"></i></button>
                   </td>
                 </tr>
@@ -166,7 +185,7 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
 
       {showModal && (
         <div className="fixed inset-0 bg-emerald-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <form ref={formRef} onKeyDown={handleKeyDown} onSubmit={handleSubmit} className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md space-y-5 animate-scale-in">
+          <form ref={formRef} onKeyDown={handleKeyDown} onSubmit={handleSubmit} className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md space-y-5 animate-scale-in max-h-[90vh] overflow-y-auto custom-scrollbar">
             <h3 className="text-2xl font-black text-emerald-900">{editing ? (lang === 'bn' ? 'এডিট পণ্য' : 'Edit Product') : (lang === 'bn' ? 'নতুন পণ্য' : 'New Product')}</h3>
             <div className="space-y-4">
               <input required placeholder={lang === 'bn' ? 'পণ্যের নাম' : 'Product Name'} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border p-3.5 rounded-2xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500" />
@@ -175,7 +194,7 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
                  {data.categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
               </select>
               <div className="grid grid-cols-2 gap-4">
-                <input type="number" placeholder={lang === 'bn' ? 'স্টক' : 'Stock'} value={formData.stock || ''} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} className="w-full border p-3.5 rounded-2xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500" />
+                <input type="number" placeholder={lang === 'bn' ? 'স্টক পরিমাণ' : 'Stock'} value={formData.stock || ''} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} className="w-full border p-3.5 rounded-2xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500" />
                 <select value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} className="w-full border p-3.5 rounded-2xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500">
                   <option value="Pcs">Pcs</option><option value="Box">Box</option><option value="Kg">Kg</option><option value="Ltr">Ltr</option>
                 </select>
@@ -183,6 +202,10 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
               <div className="grid grid-cols-2 gap-4">
                 <input type="number" placeholder={lang === 'bn' ? 'কেনা দাম' : 'Cost'} value={formData.costPrice || ''} onChange={e => setFormData({...formData, costPrice: Number(e.target.value)})} className="w-full border p-3.5 rounded-2xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500" />
                 <input type="number" placeholder={lang === 'bn' ? 'বিক্রি দাম' : 'Price'} value={formData.salePrice || ''} onChange={e => setFormData({...formData, salePrice: Number(e.target.value)})} className="w-full border p-3.5 rounded-2xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'স্টক এলার্ট লিমিট (Stock Alert)' : 'Stock Alert Threshold'}</label>
+                <input type="number" placeholder={lang === 'bn' ? 'স্টক এলার্ট লিমিট' : 'Alert at stock level...'} value={formData.lowStockThreshold || ''} onChange={e => setFormData({...formData, lowStockThreshold: Number(e.target.value)})} className="w-full border p-3.5 rounded-2xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500" />
               </div>
             </div>
             <div className="flex gap-4 pt-4">
@@ -193,7 +216,6 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
         </div>
       )}
 
-      {/* Other modals (showCatModal, confirmDelete) remain the same */}
       {showCatModal && (
         <div className="fixed inset-0 bg-emerald-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-lg space-y-6">

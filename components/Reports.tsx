@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AppData, StockIn, StockOut } from '../types';
 
 interface ReportsProps {
@@ -20,9 +19,21 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
 
   const [editingLog, setEditingLog] = useState<any | null>(null);
   const [editFormData, setEditFormData] = useState<any>({});
+  const filterSelectRef = useRef<HTMLSelectElement>(null);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        filterSelectRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   const t = {
-    filterTitle: lang === 'bn' ? 'রিপোর্ট ফিল্টার' : 'Report Filters',
+    filterTitle: lang === 'bn' ? 'রিপোর্ট ফিল্টার (Alt+S)' : 'Report Filters (Alt+S)',
     reportType: lang === 'bn' ? 'লেনদেনের ধরন' : 'Transaction Type',
     start: lang === 'bn' ? 'শুরুর তারিখ' : 'Start Date',
     end: lang === 'bn' ? 'শেষ তারিখ' : 'End Date',
@@ -101,7 +112,12 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.reportType}</label>
-            <select value={filter.type} onChange={e => setFilter({ ...filter, type: e.target.value })} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200">
+            <select 
+              ref={filterSelectRef}
+              value={filter.type} 
+              onChange={e => setFilter({ ...filter, type: e.target.value })} 
+              className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200"
+            >
               <option value="all">{t.all}</option>
               <option value="stockIn">{t.buyLabel}</option>
               <option value="stockOut">{t.sellLabel}</option>

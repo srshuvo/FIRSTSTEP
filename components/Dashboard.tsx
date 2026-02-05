@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
 import { AppData, Product, StockOut } from '../types';
 
@@ -78,19 +77,20 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
     };
   }, [data, dateFilter, customRange]);
 
+  const lowStockItems = useMemo(() => {
+    return data.products.filter(p => p.stock <= (p.lowStockThreshold || 10));
+  }, [data.products]);
+
   const catPerformance = useMemo(() => {
     const sOut = getFilteredLogs(data.stockOutLogs);
     const performanceMap: Record<string, { name: string; stock: number; stockVal: number; sales: number; profit: number }> = {};
     
-    // Initialize performance map with ALL categories
     data.categories.forEach(cat => {
       performanceMap[cat.id] = { name: cat.name, stock: 0, stockVal: 0, sales: 0, profit: 0 };
     });
     
-    // Always include Uncategorized in the summary
     performanceMap['none'] = { name: lang === 'bn' ? 'ক্যাটাগরি ছাড়া' : 'Uncategorized', stock: 0, stockVal: 0, sales: 0, profit: 0 };
 
-    // Group Products for Stock & Value
     data.products.forEach(p => {
       const catId = p.categoryId || 'none';
       if (performanceMap[catId]) {
@@ -99,7 +99,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
       }
     });
 
-    // Group Sales for Sales & Profit
     sOut.forEach(log => {
       const p = data.products.find(prod => prod.id === log.productId);
       const catId = p?.categoryId || 'none';
@@ -109,7 +108,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
       }
     });
 
-    // Return ALL values (no filtering) to show all categories as requested
     return Object.values(performanceMap);
   }, [data, dateFilter, customRange, lang]);
 
@@ -148,11 +146,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
       return `${toBn(day)} ${hijriMonthsBn[monthIndex]} ${toBn(year)}`;
     };
     
-    return { 
-      en: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(now), 
-      bn: getBongabdo(), 
-      ar: getHijri() 
-    };
+    return { en: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(now), bn: getBongabdo(), ar: getHijri() };
   }, [currentTime]);
 
   const formatClock = (date: Date) => {
@@ -173,7 +167,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
     due: lang === 'bn' ? 'মোট পাওনা' : 'Total Due',
     stockVal: lang === 'bn' ? 'স্টক ভ্যালু' : 'Stock Value',
     catPerformance: lang === 'bn' ? 'ক্যাটাগরি পারফরম্যান্স' : 'Category Performance',
-    recentSales: lang === 'bn' ? 'সাম্প্রতিক বিক্রি' : 'Recent Sales',
+    lowStock: lang === 'bn' ? 'স্টক এলার্ট (কম মাল)' : 'Stock Alert (Low Stock)',
     engCal: lang === 'bn' ? 'ইংরেজি' : 'English',
     bngCal: lang === 'bn' ? 'বাংলা' : 'Bengali',
     hijCal: lang === 'bn' ? 'হিজরি' : 'Hijri'
@@ -241,6 +235,26 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         <KPICard title={t.netProfit} value={`৳${stats.netProfit.toLocaleString()}`} icon="fa-chart-line" color="emerald" />
         <KPICard title={t.due} value={`৳${stats.totalDue.toLocaleString()}`} icon="fa-user-clock" color="red" />
       </section>
+
+      {/* Low Stock Alerts */}
+      {lowStockItems.length > 0 && (
+        <div className="bg-rose-50 border border-rose-100 p-6 rounded-[2.5rem] shadow-sm animate-pulse-slow">
+           <h3 className="font-black text-rose-700 text-sm uppercase tracking-widest flex items-center gap-3 mb-4">
+             <i className="fas fa-triangle-exclamation animate-bounce"></i>
+             {t.lowStock}
+           </h3>
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+             {lowStockItems.map(p => (
+               <div key={p.id} className="bg-white p-4 rounded-2xl border border-rose-200 flex justify-between items-center shadow-sm">
+                  <span className="font-black text-slate-800 text-xs truncate mr-2">{p.name}</span>
+                  <span className="shrink-0 bg-rose-600 text-white px-3 py-1 rounded-full text-[10px] font-black">
+                    {p.stock} {p.unit}
+                  </span>
+               </div>
+             ))}
+           </div>
+        </div>
+      )}
 
       <div className="bg-white p-8 rounded-[3.5rem] shadow-sm border border-slate-100 relative overflow-hidden">
         <div className="flex justify-between items-center mb-8">

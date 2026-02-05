@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AppData, Customer, PaymentLog, StockOut } from '../types';
 
 interface CustomersProps {
@@ -24,6 +23,18 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
   const [payingCustomer, setPayingCustomer] = useState<Customer | null>(null);
   const [historyCustomer, setHistoryCustomer] = useState<Customer | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
   
   const [ledgerStartDate, setLedgerStartDate] = useState('');
   const [ledgerEndDate, setLedgerEndDate] = useState('');
@@ -34,7 +45,7 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
 
   const t = {
     title: lang === 'bn' ? 'ক্রেতা ও খতিয়ান' : 'Customer Ledger',
-    search: lang === 'bn' ? 'নাম বা ফোন দিয়ে খুঁজুন...' : 'Search Ledger...',
+    search: lang === 'bn' ? 'নাম বা ফোন দিয়ে খুঁজুন... (Alt+S)' : 'Search Ledger... (Alt+S)',
     newBtn: lang === 'bn' ? 'নতুন ক্রেতা' : 'New Customer',
     totalDue: lang === 'bn' ? 'মোট পাওনা (বাকি)' : 'Total Receivable',
     totalAdvance: lang === 'bn' ? 'মোট অগ্রিম (জমা)' : 'Total Advance',
@@ -109,7 +120,14 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 no-print">
         <div className="relative w-full md:w-96">
           <i className="fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-          <input type="text" placeholder={t.search} className="w-full pl-10 pr-4 py-3 border rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          <input 
+            ref={searchInputRef}
+            type="text" 
+            placeholder={t.search} 
+            className="w-full pl-10 pr-4 py-3 border rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold" 
+            value={searchTerm} 
+            onChange={e => setSearchTerm(e.target.value)} 
+          />
         </div>
         <div className="flex gap-2 w-full md:w-auto">
           <button onClick={() => window.print()} className="flex-1 bg-emerald-50 text-emerald-600 px-5 py-3 rounded-2xl font-black flex items-center justify-center gap-2 border border-emerald-100 hover:bg-emerald-600 hover:text-white transition shadow-sm"><i className="fas fa-file-export"></i> {t.printBtn}</button>
@@ -174,7 +192,6 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
         </div>
       </div>
 
-      {/* Modals are kept identical in logic but labels are updated */}
       {showModal && (
         <div className="fixed inset-0 bg-emerald-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
           <form onSubmit={handleSubmit} className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md space-y-6 animate-scale-in">
@@ -206,7 +223,6 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
         </div>
       )}
 
-      {/* History and Payment Modals also exist here... logic remains but label 'Customers Module' replaced with 'Customers' elsewhere if any */}
       {showPayModal && payingCustomer && (
         <div className="fixed inset-0 bg-emerald-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
           <form onSubmit={handlePayment} className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md space-y-6 animate-scale-in">

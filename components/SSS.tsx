@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AppData, LedgerEntry } from '../types';
 
 interface SSSProps {
@@ -16,6 +16,18 @@ const SSS: React.FC<SSSProps> = ({ data, onAdd, onUpdate, onDelete, lang }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState<LedgerEntry | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
   
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -80,8 +92,15 @@ const SSS: React.FC<SSSProps> = ({ data, onAdd, onUpdate, onDelete, lang }) => {
       <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 no-print">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <div>
-            <label className="block text-[10px] font-black uppercase text-gray-400 mb-1 ml-1">{lang === 'bn' ? 'খুঁজুন...' : 'Search...'}</label>
-            <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full p-2.5 border rounded-xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500" placeholder={lang === 'bn' ? 'খুঁজুন...' : 'Search...'} />
+            <label className="block text-[10px] font-black uppercase text-gray-400 mb-1 ml-1">{lang === 'bn' ? 'খুঁজুন... (Alt+S)' : 'Search... (Alt+S)'}</label>
+            <input 
+              ref={searchInputRef}
+              type="text" 
+              value={searchTerm} 
+              onChange={e => setSearchTerm(e.target.value)} 
+              className="w-full p-2.5 border rounded-xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500" 
+              placeholder={lang === 'bn' ? 'খুঁজুন...' : 'Search...'} 
+            />
           </div>
           <div>
             <label className="block text-[10px] font-black uppercase text-gray-400 mb-1 ml-1">{lang === 'bn' ? 'হতে' : 'From'}</label>
