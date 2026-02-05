@@ -92,79 +92,91 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
 
   return (
     <div className="space-y-8 animate-scale-in">
+      {/* Premium Header Section */}
       <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
-        <div>
-          <h1 className="text-4xl font-black text-slate-950 tracking-tighter uppercase neon-text">FIRST STEP</h1>
-          <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.4em] mt-1">Enterprise Solution</p>
+        <div className="text-center lg:text-left">
+          <h1 className="text-5xl font-black text-slate-950 tracking-tighter uppercase neon-text leading-none">FIRST STEP</h1>
+          <div className="flex items-center justify-center lg:justify-start gap-2 mt-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.5em]">Enterprise Edition v2.5</p>
+          </div>
         </div>
 
-        <div className="bg-slate-950 px-8 py-4 rounded-[2.5rem] flex items-center gap-6 border-2 border-slate-800 shadow-2xl relative overflow-hidden group">
+        <div className="bg-slate-950 px-10 py-5 rounded-[3rem] flex items-center gap-8 border-2 border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.3)] relative overflow-hidden group min-w-[320px]">
           <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-emerald-500/10 transition-all"></div>
           <div className="flex flex-col items-center">
-            <span className="text-[7px] font-black text-emerald-700 uppercase tracking-widest mb-1.5">System Time</span>
-            <div className="flex items-baseline font-mono-tech text-3xl font-black text-emerald-400 leading-none">
+            <span className="text-[8px] font-black text-emerald-700 uppercase tracking-widest mb-2">Sync Time</span>
+            <div className="flex items-baseline font-mono-tech text-4xl font-black text-emerald-400 leading-none drop-shadow-[0_0_15px_rgba(52,211,153,0.4)]">
               <span>{clock.hours}</span>
-              <span className="mx-1 animate-pulse">:</span>
+              <span className="mx-1 animate-pulse opacity-50">:</span>
               <span>{clock.minutes}</span>
-              <span className="text-[10px] ml-2 text-emerald-600 font-black uppercase">{clock.ampm}</span>
+              <span className="text-xs ml-3 text-emerald-600 font-black uppercase tracking-tighter">{clock.ampm}</span>
             </div>
           </div>
-          <div className="w-[1px] h-10 bg-slate-800"></div>
-          <div className="flex flex-col items-center">
-            <span className="text-sm font-black text-emerald-500 font-mono-tech">{clock.seconds}</span>
-            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-1 animate-ping"></div>
+          <div className="w-[1px] h-12 bg-slate-800"></div>
+          <div className="flex flex-col items-center justify-center">
+            <span className="text-lg font-black text-emerald-500/80 font-mono-tech">{clock.seconds}</span>
+            <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 animate-ping shadow-[0_0_10px_#10b981]"></div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white/50 backdrop-blur-sm p-3 rounded-[2.5rem] border border-slate-100 flex flex-wrap gap-2 items-center sticky top-2 z-10 no-print">
-        <div className="px-5 py-2.5 bg-slate-950 rounded-full flex items-center gap-2">
-           <i className="fas fa-filter text-emerald-500 text-[10px]"></i>
+      {/* Modern Filter Bar */}
+      <div className="bg-white/70 backdrop-blur-xl p-3 rounded-[3rem] border border-slate-200/50 flex flex-wrap gap-2 items-center sticky top-4 z-40 no-print shadow-xl shadow-slate-200/40">
+        <div className="px-5 py-3 bg-slate-950 rounded-full flex items-center gap-3">
+           <i className="fas fa-microchip text-emerald-500 text-[10px] animate-pulse"></i>
            <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">{t.filters}</span>
         </div>
         {['today', '7days', 'month', '6months', '12months'].map(f => (
           <button
             key={f}
             onClick={() => setDateFilter(f as any)}
-            className={`px-6 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${dateFilter === f ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:bg-white'}`}
+            className={`px-7 py-3 rounded-full text-[11px] font-black uppercase tracking-widest transition-all duration-500 ${dateFilter === f ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-200 scale-105 neon-border' : 'text-slate-500 hover:bg-emerald-50 border border-transparent'}`}
           >
             {lang === 'bn' ? (f === 'today' ? 'আজ' : f === '7days' ? '৭ দিন' : f === 'month' ? '১ মাস' : f === '6months' ? '৬ মাস' : '১ বছর') : f}
           </button>
         ))}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+      {/* KPI Section with Responsive Sizing */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6">
         <KPICard title={t.sales} value={`৳${stats.totalSales.toLocaleString()}`} icon="fa-wallet" color="bg-blue-600" />
-        <KPICard title={t.purchase} value={`৳${stats.totalPurchase.toLocaleString()}`} icon="fa-cart-shopping" color="bg-amber-500" />
-        <KPICard title={t.stock} value={`৳${stats.totalStockValue.toLocaleString()}`} icon="fa-boxes-stacked" color="bg-indigo-600" />
+        <KPICard title={t.purchase} value={`৳${stats.totalPurchase.toLocaleString()}`} icon="fa-cart-shopping" color="bg-orange-500" />
+        <KPICard title={t.stock} value={`৳${stats.totalStockValue.toLocaleString()}`} icon="fa-cubes-stacked" color="bg-indigo-600" />
         <KPICard title={t.profit} value={`৳${stats.netProfit.toLocaleString()}`} icon="fa-chart-line" color="bg-emerald-600" />
         <KPICard title={t.due} value={`৳${stats.totalDue.toLocaleString()}`} icon="fa-user-clock" color="bg-rose-500" />
-        <KPICard title={lang === 'bn' ? 'স্টক আইটেম' : 'Total Items'} value={data.products.length.toString()} icon="fa-layer-group" color="bg-slate-800" />
+        <KPICard title={lang === 'bn' ? 'স্টক আইটেম' : 'Total Items'} value={data.products.length.toString()} icon="fa-tags" color="bg-slate-800" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-           <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform">
-             <i className="fas fa-boxes-packing text-8xl text-emerald-600"></i>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        {/* Inventory Status Card */}
+        <div className="bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.02)] relative overflow-hidden group">
+           <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-700">
+             <i className="fas fa-boxes-packing text-[120px] text-emerald-600"></i>
            </div>
-           <h3 className="font-black text-slate-900 text-sm uppercase tracking-widest mb-6 flex items-center gap-3">
-              <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
-              {lang === 'bn' ? 'স্টক ইনভেন্টরি অবস্থা' : 'Stock Status'}
-           </h3>
+           <div className="flex justify-between items-center mb-10">
+             <h3 className="font-black text-slate-900 text-xs uppercase tracking-[0.25em] flex items-center gap-4">
+                <div className="w-2 h-8 bg-emerald-500 rounded-full shadow-[0_0_10px_#10b981]"></div>
+                {lang === 'bn' ? 'স্টক ইনভেন্টরি অবস্থা' : 'Stock Inventory Status'}
+             </h3>
+             <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100 tracking-widest uppercase">Live Scan</span>
+           </div>
            <div className="space-y-4 relative z-10">
-              {data.products.slice(0, 5).map(p => {
+              {data.products.slice(0, 6).map(p => {
                  const isLow = p.stock <= (p.lowStockThreshold || 10);
                  return (
-                   <div key={p.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-white transition shadow-sm border border-transparent hover:border-emerald-100">
+                   <div key={p.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-3xl border border-transparent hover:border-emerald-100 hover:bg-white transition-all duration-300 shadow-sm hover:shadow-xl group/item">
                       <div className="flex flex-col">
-                         <span className="font-black text-slate-800 text-sm">{p.name}</span>
-                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{p.unit} Base Unit</span>
+                         <span className="font-black text-slate-800 text-sm group-hover/item:text-emerald-700 transition-colors">{p.name}</span>
+                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{p.unit} Base Unit</span>
                       </div>
                       <div className="flex items-center gap-4">
-                         <span className={`text-xs font-black px-4 py-1.5 rounded-xl shadow-inner ${isLow ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-700'}`}>
-                           {p.stock} {p.unit}
-                         </span>
-                         {isLow && <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>}
+                         <div className="flex flex-col items-end">
+                            <span className={`text-sm font-black px-5 py-2 rounded-2xl shadow-inner ${isLow ? 'bg-rose-100 text-rose-600 border border-rose-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
+                              {p.stock} <span className="text-[10px] opacity-70 ml-1">{p.unit}</span>
+                            </span>
+                         </div>
+                         {isLow && <div className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></div>}
                       </div>
                    </div>
                  );
@@ -172,22 +184,32 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
            </div>
         </div>
 
-        <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
-           <h3 className="font-black text-slate-900 text-sm uppercase tracking-widest mb-6 flex items-center gap-3">
-              <div className="w-1.5 h-6 bg-blue-500 rounded-full"></div>
+        {/* Recent Transactions Card */}
+        <div className="bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.02)]">
+           <h3 className="font-black text-slate-900 text-xs uppercase tracking-[0.25em] mb-10 flex items-center gap-4">
+              <div className="w-2 h-8 bg-blue-500 rounded-full shadow-[0_0_10px_#3b82f6]"></div>
               {t.recent}
            </h3>
            <div className="space-y-4">
-              {data.stockOutLogs.slice(0, 5).map(l => (
-                <div key={l.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-blue-100 hover:bg-white transition shadow-sm">
+              {data.stockOutLogs.slice(0, 6).map(l => (
+                <div key={l.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-3xl border border-transparent hover:border-blue-100 hover:bg-white transition-all duration-300 shadow-sm hover:shadow-xl">
                    <div className="flex flex-col">
                       <span className="font-black text-slate-800 text-sm">{data.customers.find(c => c.id === l.customerId)?.name || 'Walk-in'}</span>
-                      <span className="text-[10px] font-bold text-slate-400">{l.date}</span>
+                      <span className="text-[10px] font-bold text-slate-400 mt-1 flex items-center gap-2">
+                        <i className="fas fa-clock text-[8px]"></i> {l.date}
+                      </span>
                    </div>
-                   <span className="text-base font-black text-emerald-600">৳{l.totalPrice.toLocaleString()}</span>
+                   <div className="text-right">
+                      <span className="text-lg font-black text-emerald-600 font-mono-tech">৳{l.totalPrice.toLocaleString()}</span>
+                   </div>
                 </div>
               ))}
-              {data.stockOutLogs.length === 0 && <p className="text-center py-10 text-gray-400 italic font-bold text-xs uppercase">No Recent Transactions</p>}
+              {data.stockOutLogs.length === 0 && (
+                <div className="text-center py-20 flex flex-col items-center">
+                   <i className="fas fa-receipt text-5xl text-gray-100 mb-4"></i>
+                   <p className="text-gray-400 italic font-black text-[10px] uppercase tracking-widest">No Recent Transactions Found</p>
+                </div>
+              )}
            </div>
         </div>
       </div>
@@ -197,21 +219,23 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
 
 const KPICard = ({ title, value, icon, color }: any) => {
   const valLen = value?.length || 0;
-  let valClass = 'text-2xl';
-  if (valLen > 15) valClass = 'text-xs';
+  let valClass = 'text-3xl';
+  if (valLen > 15) valClass = 'text-[11px]';
   else if (valLen > 12) valClass = 'text-sm';
-  else if (valLen > 10) valClass = 'text-lg';
+  else if (valLen > 9) valClass = 'text-xl';
 
   return (
-    <div className="bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:scale-[1.02] transition-all duration-500 group overflow-hidden relative flex flex-col min-h-[110px] min-w-0">
-      <div className={`absolute -top-10 -right-10 w-24 h-24 ${color} opacity-5 rounded-full blur-2xl group-hover:scale-150 transition-transform`}></div>
-      <div className="flex items-center gap-3 mb-3">
-        <div className={`w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center text-white shadow-lg ${color} transition-transform group-hover:rotate-12`}>
-           <i className={`fas ${icon} text-sm`}></i>
+    <div className="bg-white p-6 rounded-[2.8rem] border border-slate-100 shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.04)] hover:scale-[1.03] transition-all duration-500 group overflow-hidden relative flex flex-col min-h-[135px] min-w-0">
+      <div className={`absolute -top-12 -right-12 w-32 h-32 ${color} opacity-5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700`}></div>
+      <div className="flex items-center gap-4 mb-4">
+        <div className={`w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center text-white shadow-xl ${color} transition-all duration-500 group-hover:rotate-12 group-hover:scale-110`}>
+           <i className={`fas ${icon} text-lg`}></i>
         </div>
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">{title}</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate group-hover:text-slate-600 transition-colors">{title}</p>
+        </div>
       </div>
-      <p className={`font-black tracking-tighter text-slate-900 leading-none truncate break-all ${valClass}`}>
+      <p className={`font-black tracking-tighter text-slate-950 leading-none truncate break-all transition-all ${valClass} group-hover:translate-x-1`}>
         {value}
       </p>
     </div>
