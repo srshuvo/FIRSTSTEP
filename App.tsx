@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { User, UserRole, AppData, Product, Customer, Supplier, StockIn, StockOut, PaymentLog, Category, LedgerEntry } from './types';
@@ -12,7 +11,6 @@ import Suppliers from './components/Suppliers';
 import Navbar from './components/Navbar';
 import Login from './components/Login';
 import LanguageSwitcher from './components/LanguageSwitcher';
-import ChatBot from './components/ChatBot';
 import SSS from './components/SSS';
 
 const SUPABASE_URL = 'https://qwopfalqhkkjkxqpbloa.supabase.co';
@@ -154,6 +152,8 @@ const App: React.FC = () => {
     setLastDeleted(null);
   };
 
+  const addProduct = (p: Product) => setData(prev => ({ ...prev, products: [p, ...prev.products] }));
+  const updateProduct = (p: Product) => setData(prev => ({ ...prev, products: prev.products.map(old => old.id === p.id ? p : old) }));
   const deleteProduct = (id: string) => {
     setData(prev => {
       const itemToDelete = prev.products.find(p => p.id === id);
@@ -162,6 +162,34 @@ const App: React.FC = () => {
     });
   };
 
+  const addCategory = (c: Category) => setData(prev => ({ ...prev, categories: [...(prev.categories || []), c] }));
+  const updateCategory = (c: Category) => setData(prev => ({ ...prev, categories: prev.categories.map(old => old.id === c.id ? c : old) }));
+  const deleteCategory = (id: string) => {
+    setData(prev => {
+      const cat = prev.categories.find(c => c.id === id);
+      const affectedProducts = prev.products.filter(p => p.categoryId === id);
+      if (cat) setLastDeleted({ 
+        type: 'category', 
+        item: { category: cat, affectedProductIds: affectedProducts.map(p => p.id) }, 
+        label: cat.name 
+      });
+      return {
+        ...prev,
+        categories: prev.categories.filter(c => c.id !== id),
+        products: prev.products.map(p => p.categoryId === id ? { ...p, categoryId: undefined } : p)
+      };
+    });
+  };
+
+  const bulkCategoryUpdate = (catId: string | undefined, productIds: string[]) => {
+    setData(prev => ({
+      ...prev,
+      products: prev.products.map(p => productIds.includes(p.id) ? { ...p, categoryId: catId } : p)
+    }));
+  };
+
+  const addCustomer = (c: Customer) => setData(prev => ({ ...prev, customers: [c, ...prev.customers] }));
+  const updateCustomer = (c: Customer) => setData(prev => ({ ...prev, customers: prev.customers.map(old => old.id === c.id ? c : old) }));
   const deleteCustomer = (id: string) => {
     setData(prev => {
       const itemToDelete = prev.customers.find(c => c.id === id);
@@ -170,12 +198,54 @@ const App: React.FC = () => {
     });
   };
 
+  const addSupplier = (s: Supplier) => setData(prev => ({ ...prev, suppliers: [s, ...prev.suppliers] }));
+  const updateSupplier = (s: Supplier) => setData(prev => ({ ...prev, suppliers: prev.suppliers.map(old => old.id === s.id ? s : old) }));
   const deleteSupplier = (id: string) => {
     setData(prev => {
       const itemToDelete = prev.suppliers.find(s => s.id === id);
       if (itemToDelete) setLastDeleted({ type: 'supplier', item: itemToDelete, label: itemToDelete.name });
       return { ...prev, suppliers: prev.suppliers.filter(s => s.id !== id) };
     });
+  };
+
+  const recordStockIn = (log: StockIn) => {
+    setData(prev => ({
+      ...prev,
+      stockInLogs: [log, ...prev.stockInLogs],
+      products: prev.products.map(p => p.id === log.productId ? { ...p, stock: p.stock + log.quantity } : p)
+    }));
+  };
+  const deleteStockIn = (id: string) => {
+    setData(prev => {
+      const log = prev.stockInLogs.find(l => l.id === id);
+      if (!log) return prev;
+      setLastDeleted({ type: 'stockIn', item: log, label: `${log.productName} (${log.quantity})` });
+      return {
+        ...prev,
+        stockInLogs: prev.stockInLogs.filter(l => l.id !== id),
+        products: prev.products.map(p => p.id === log.productId ? { ...p, stock: p.stock - log.quantity } : p)
+      };
+    });
+  };
+  const updateStockIn = (updatedLog: StockIn) => {
+    setData(prev => {
+      const oldLog = prev.stockInLogs.find(l => l.id === updatedLog.id);
+      if (!oldLog) return prev;
+      return {
+        ...prev,
+        stockInLogs: prev.stockInLogs.map(l => l.id === updatedLog.id ? updatedLog : l),
+        products: prev.products.map(p => p.id === updatedLog.productId ? { ...p, stock: p.stock - oldLog.quantity + updatedLog.quantity } : p)
+      };
+    });
+  };
+
+  const recordStockOut = (log: StockOut) => {
+    setData(prev => ({
+      ...prev,
+      stockOutLogs: [log, ...prev.stockOutLogs],
+      products: prev.products.map(p => p.id === log.productId ? { ...p, stock: p.stock - log.quantity } : p),
+      customers: prev.customers.map(c => c.id === log.customerId ? { ...c, dueAmount: c.dueAmount + log.dueAdded } : c)
+    }));
   };
 
   const handlePaymentRecord = (log: PaymentLog) => {
@@ -204,182 +274,175 @@ const App: React.FC = () => {
     setData(prev => {
       const oldLog = prev.stockOutLogs.find(l => l.id === updatedLog.id);
       if (!oldLog) return prev;
-      let tempProducts = prev.products.map(p => p.id === oldLog.productId ? { ...p, stock: p.stock + oldLog.quantity } : p);
-      let tempCustomers = prev.customers.map(c => c.id === oldLog.customerId ? { ...c, dueAmount: c.dueAmount - oldLog.dueAdded } : c);
-      const finalProducts = tempProducts.map(p => p.id === updatedLog.productId ? { ...p, stock: p.stock - updatedLog.quantity } : p);
-      const finalCustomers = tempCustomers.map(c => c.id === updatedLog.customerId ? { ...c, dueAmount: c.dueAmount + updatedLog.dueAdded } : c);
       return {
         ...prev,
         stockOutLogs: prev.stockOutLogs.map(l => l.id === updatedLog.id ? updatedLog : l),
-        products: finalProducts,
-        customers: finalCustomers
+        products: prev.products.map(p => p.id === updatedLog.productId ? { ...p, stock: p.stock + oldLog.quantity - updatedLog.quantity } : p),
+        customers: prev.customers.map(c => c.id === updatedLog.customerId ? { ...c, dueAmount: c.dueAmount - oldLog.dueAdded + updatedLog.dueAdded } : c)
       };
     });
   };
 
-  const deleteStockIn = (logId: string) => {
+  const deletePayment = (id: string) => {
     setData(prev => {
-      const log = prev.stockInLogs.find(l => l.id === logId);
+      const log = prev.paymentLogs.find(l => l.id === id);
       if (!log) return prev;
-      setLastDeleted({ type: 'stockIn', item: log, label: `${log.productName} (${log.quantity})` });
+      setLastDeleted({ type: 'payment', item: log, label: `Payment: ৳${log.amount}` });
       return {
         ...prev,
-        stockInLogs: prev.stockInLogs.filter(l => l.id !== logId),
-        products: prev.products.map(p => p.id === log.productId ? { ...p, stock: Math.max(0, p.stock - log.quantity) } : p)
-      };
-    });
-  };
-
-  const updateStockIn = (updatedLog: StockIn) => {
-    setData(prev => {
-      const oldLog = prev.stockInLogs.find(l => l.id === updatedLog.id);
-      if (!oldLog) return prev;
-      let tempProducts = prev.products.map(p => p.id === oldLog.productId ? { ...p, stock: Math.max(0, p.stock - oldLog.quantity) } : p);
-      const finalProducts = tempProducts.map(p => {
-        if (p.id === updatedLog.productId) {
-          const currentTotalValue = p.stock * p.costPrice;
-          const incomingValue = updatedLog.quantity * updatedLog.unitPrice;
-          const newTotalStock = p.stock + updatedLog.quantity;
-          const avgPrice = newTotalStock > 0 ? Number(((currentTotalValue + incomingValue) / newTotalStock).toFixed(2)) : updatedLog.unitPrice;
-          return { ...p, stock: newTotalStock, costPrice: avgPrice };
-        }
-        return p;
-      });
-      return {
-        ...prev,
-        stockInLogs: prev.stockInLogs.map(l => l.id === updatedLog.id ? updatedLog : l),
-        products: finalProducts
-      };
-    });
-  };
-
-  const deletePaymentLog = (logId: string) => {
-    setData(prev => {
-      const log = prev.paymentLogs.find(l => l.id === logId);
-      if (!log) return prev;
-      setLastDeleted({ type: 'payment', item: log, label: `৳${log.amount}` });
-      return {
-        ...prev,
-        paymentLogs: prev.paymentLogs.filter(l => l.id !== logId),
+        paymentLogs: prev.paymentLogs.filter(l => l.id !== id),
         customers: prev.customers.map(c => c.id === log.customerId ? { ...c, dueAmount: c.dueAmount + log.amount + (log.discount || 0) } : c)
       };
     });
   };
 
-  const updatePaymentLog = (updatedLog: PaymentLog) => {
+  const updatePayment = (updatedLog: PaymentLog) => {
     setData(prev => {
-      const log = prev.paymentLogs.find(l => l.id === updatedLog.id);
-      if (!log) return prev;
-      let tempCustomers = prev.customers.map(c => c.id === log.customerId ? { ...c, dueAmount: c.dueAmount + log.amount + (log.discount || 0) } : c);
-      const finalCustomers = tempCustomers.map(c => c.id === updatedLog.customerId ? { ...c, dueAmount: c.dueAmount - (updatedLog.amount + (updatedLog.discount || 0)) } : c);
+      const oldLog = prev.paymentLogs.find(l => l.id === updatedLog.id);
+      if (!oldLog) return prev;
       return {
         ...prev,
         paymentLogs: prev.paymentLogs.map(l => l.id === updatedLog.id ? updatedLog : l),
-        customers: finalCustomers
+        customers: prev.customers.map(c => c.id === updatedLog.customerId ? { ...c, dueAmount: c.dueAmount + (oldLog.amount + (oldLog.discount || 0)) - (updatedLog.amount + (updatedLog.discount || 0)) } : c)
       };
     });
   };
 
+  const addLedgerEntry = (e: LedgerEntry) => setData(prev => ({ ...prev, ledgerEntries: [e, ...(prev.ledgerEntries || [])] }));
+  const updateLedgerEntry = (e: LedgerEntry) => setData(prev => ({ ...prev, ledgerEntries: (prev.ledgerEntries || []).map(old => old.id === e.id ? e : old) }));
   const deleteLedgerEntry = (id: string) => {
     setData(prev => {
-      const item = (prev.ledgerEntries || []).find(e => e.id === id);
-      if (item) setLastDeleted({ type: 'ledger', item, label: item.description });
+      const entry = (prev.ledgerEntries || []).find(e => e.id === id);
+      if (entry) setLastDeleted({ type: 'ledger', item: entry, label: entry.description });
       return { ...prev, ledgerEntries: (prev.ledgerEntries || []).filter(e => e.id !== id) };
     });
   };
 
-  const updateLedgerEntry = (entry: LedgerEntry) => {
-    setData(prev => ({ ...prev, ledgerEntries: (prev.ledgerEntries || []).map(e => e.id === entry.id ? entry : e) }));
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
   };
 
-  const addLedgerEntry = (entry: LedgerEntry) => {
-    setData(prev => ({ ...prev, ledgerEntries: [entry, ...(prev.ledgerEntries || [])] }));
-  };
-
-  const addCategory = (cat: Category) => setData(prev => ({ ...prev, categories: [...(prev.categories || []), cat] }));
-  const updateCategory = (cat: Category) => setData(prev => ({ ...prev, categories: (prev.categories || []).map(c => c.id === cat.id ? cat : c) }));
+  if (!user) return <Login lang={lang} setLang={setLang} />;
   
-  const deleteCategory = (id: string) => {
-    setData(prev => {
-      const catToDelete = (prev.categories || []).find(c => c.id === id);
-      if (catToDelete) {
-        const affectedProductIds = prev.products.filter(p => p.categoryId === id).map(p => p.id);
-        setLastDeleted({ type: 'category', item: { category: catToDelete, affectedProductIds }, label: catToDelete.name });
-      }
-      return {
-        ...prev,
-        categories: (prev.categories || []).filter(c => c.id !== id),
-        products: prev.products.map(p => p.categoryId === id ? { ...p, categoryId: undefined } : p)
-      };
-    });
-  };
-
-  const bulkUpdateProductCategory = (catId: string | undefined, productIds: string[]) => {
-    setData(prev => ({ ...prev, products: prev.products.map(p => productIds.includes(p.id) ? { ...p, categoryId: catId } : p) }));
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-emerald-900 flex flex-col items-center justify-center text-white p-6">
-        <div className="w-16 h-16 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <h2 className="text-xl font-bold">{lang === 'bn' ? 'লোড হচ্ছে...' : 'Loading...'}</h2>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <>
-        <Login lang={lang} setLang={setLang} />
-        <LanguageSwitcher lang={lang} setLang={setLang} />
-      </>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-emerald-500">
+      <i className="fas fa-spinner fa-spin text-4xl mb-4"></i>
+      <p className="font-black uppercase tracking-[0.5em] text-xs">Initializing Khata...</p>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row relative">
-      <div className="md:hidden bg-emerald-900 text-white p-4 flex justify-between items-center sticky top-0 z-50 no-print">
-        <h1 className="font-bold text-lg">FIRST STEP</h1>
-        <div className="flex items-center gap-3">
-           {syncing ? <i className="fas fa-sync fa-spin text-xs text-emerald-400"></i> : <i className="fas fa-cloud text-xs text-emerald-400"></i>}
-           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2"><i className={`fas ${isSidebarOpen ? 'fa-times' : 'fa-bars'} text-xl`}></i></button>
-        </div>
+    <div className="flex min-h-screen bg-slate-50 font-sans selection:bg-emerald-500 selection:text-white overflow-x-hidden">
+      <Navbar 
+        currentPage={currentPage} 
+        setCurrentPage={setCurrentPage} 
+        onLogout={handleLogout} 
+        user={user} 
+        lang={lang} 
+        setLang={setLang}
+        isOpen={isSidebarOpen}
+      />
+      
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="h-16 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-30 md:hidden">
+           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="w-10 h-10 flex items-center justify-center text-slate-900">
+              <i className={`fas ${isSidebarOpen ? 'fa-times' : 'fa-bars-staggered'}`}></i>
+           </button>
+           <h1 className="text-lg font-black text-slate-900 tracking-tighter">FIRST STEP</h1>
+           <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center font-black text-xs text-white">
+              {user.name.charAt(0).toUpperCase()}
+           </div>
+        </header>
+
+        <main className="flex-1 p-4 md:p-8 lg:p-12 max-w-7xl mx-auto w-full">
+          {currentPage === 'dashboard' && <Dashboard data={data} lang={lang} />}
+          {currentPage === 'inventory' && (
+            <Inventory 
+              data={data} 
+              onAdd={addProduct} 
+              onUpdate={updateProduct} 
+              onDelete={deleteProduct} 
+              onAddCategory={addCategory} 
+              onUpdateCategory={updateCategory} 
+              onDeleteCategory={deleteCategory}
+              onBulkCategoryUpdate={bulkCategoryUpdate}
+              lang={lang} 
+            />
+          )}
+          {currentPage === 'transactions' && (
+            <Transactions 
+              data={data} 
+              onRecordPurchase={recordStockIn} 
+              onRecordSale={recordStockOut} 
+              lang={lang} 
+            />
+          )}
+          {currentPage === 'reports' && (
+            <Reports 
+              data={data} 
+              onDeleteStockIn={deleteStockIn} 
+              onDeleteStockOut={deleteStockOut} 
+              onUpdateStockIn={updateStockIn} 
+              onUpdateStockOut={updateStockOut} 
+              lang={lang} 
+            />
+          )}
+          {currentPage === 'customers' && (
+            <Customers 
+              data={data} 
+              onAdd={addCustomer} 
+              onUpdate={updateCustomer} 
+              onDelete={deleteCustomer} 
+              onPay={handlePaymentRecord}
+              onDeleteLog={deleteStockOut}
+              onUpdateLog={updateStockOut}
+              onDeletePayment={deletePayment}
+              onUpdatePayment={updatePayment}
+              lang={lang} 
+            />
+          )}
+          {currentPage === 'suppliers' && (
+            <Suppliers 
+              data={data} 
+              onAdd={addSupplier} 
+              onUpdate={updateSupplier} 
+              onDelete={deleteSupplier} 
+              onDeleteLog={deleteStockIn}
+              onUpdateLog={updateStockIn}
+              lang={lang} 
+            />
+          )}
+          {currentPage === 'sss' && (
+            <SSS 
+              data={data} 
+              onAdd={addLedgerEntry} 
+              onUpdate={updateLedgerEntry} 
+              onDelete={deleteLedgerEntry} 
+              lang={lang} 
+            />
+          )}
+        </main>
       </div>
 
-      <Navbar currentPage={currentPage} setCurrentPage={(p) => { setCurrentPage(p); setIsSidebarOpen(false); }} onLogout={async () => { await supabase.auth.signOut(); setUser(null); }} user={user} lang={lang} setLang={setLang} isOpen={isSidebarOpen} />
-      
-      <main className="flex-1 p-4 md:p-8">
-        <div className="bg-white rounded-2xl shadow-sm min-h-[70vh] p-1 md:p-4 border border-gray-100 relative">
-          {currentPage === 'dashboard' && <Dashboard data={data} lang={lang} />}
-          {currentPage === 'inventory' && <Inventory data={data} onAdd={(p) => setData(prev => ({ ...prev, products: [...prev.products, p] }))} onUpdate={(p) => setData(prev => ({...prev, products: prev.products.map(pr => pr.id === p.id ? p : pr)}))} onDelete={deleteProduct} onAddCategory={addCategory} onUpdateCategory={updateCategory} onDeleteCategory={deleteCategory} onBulkCategoryUpdate={bulkUpdateProductCategory} lang={lang} />}
-          {currentPage === 'transactions' && <Transactions data={data} onRecordPurchase={(entry) => setData(prev => {
-                const product = prev.products.find(p => p.id === entry.productId);
-                if (!product) return prev;
-                const currentTotalValue = product.stock * product.costPrice;
-                const incomingValue = entry.quantity * entry.unitPrice;
-                const newTotalStock = product.stock + entry.quantity;
-                const avgPrice = newTotalStock > 0 ? Number(((currentTotalValue + incomingValue) / newTotalStock).toFixed(2)) : entry.unitPrice;
-                return { ...prev, products: prev.products.map(p => p.id === entry.productId ? { ...p, stock: newTotalStock, costPrice: avgPrice } : p), stockInLogs: [entry, ...prev.stockInLogs] };
-              })} onRecordSale={(entry) => setData(prev => ({ ...prev, products: prev.products.map(p => p.id === entry.productId ? { ...p, stock: p.stock - entry.quantity } : p), customers: prev.customers.map(c => c.id === entry.customerId ? { ...c, dueAmount: c.dueAmount + entry.dueAdded } : c), stockOutLogs: [entry, ...prev.stockOutLogs] }))} lang={lang} />}
-          {currentPage === 'reports' && <Reports data={data} onDeleteStockIn={deleteStockIn} onDeleteStockOut={deleteStockOut} onUpdateStockIn={updateStockIn} onUpdateStockOut={updateStockOut} lang={lang} />}
-          {currentPage === 'customers' && <Customers data={data} onAdd={(c) => setData(prev => ({...prev, customers: [...prev.customers, c]}))} onUpdate={(c) => setData(prev => ({...prev, customers: prev.customers.map(cu => cu.id === c.id ? c : cu)}))} onDelete={deleteCustomer} onPay={handlePaymentRecord} onDeleteLog={deleteStockOut} onUpdateLog={updateStockOut} onDeletePayment={deletePaymentLog} onUpdatePayment={updatePaymentLog} lang={lang} />}
-          {currentPage === 'suppliers' && <Suppliers data={data} onAdd={(s) => setData(prev => ({...prev, suppliers: [...prev.suppliers, s]}))} onUpdate={(s) => setData(prev => ({...prev, suppliers: prev.suppliers.map(su => su.id === s.id ? s : su)}))} onDelete={deleteSupplier} onDeleteLog={deleteStockIn} onUpdateLog={updateStockIn} lang={lang} />}
-          {currentPage === 'sss' && <SSS data={data} onAdd={addLedgerEntry} onUpdate={updateLedgerEntry} onDelete={deleteLedgerEntry} lang={lang} />}
-        </div>
-      </main>
+      <LanguageSwitcher lang={lang} setLang={setLang} />
 
       {lastDeleted && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 z-[100] animate-bounce max-w-[90vw] md:max-w-md border border-gray-700">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-black uppercase text-emerald-400 mb-0.5">{lang === 'bn' ? 'মুছে ফেলা হয়েছে' : 'Deleted'}</span>
-            <span className="font-bold text-sm truncate">{lastDeleted.label}</span>
-          </div>
-          <button onClick={handleUndo} className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black uppercase transition shrink-0 shadow-lg">{lang === 'bn' ? 'ফেরান (Undo)' : 'Undo'}</button>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[110] animate-slide-up no-print">
+           <div className="bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 border border-slate-800">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Item Deleted</span>
+                <span className="text-sm font-bold truncate max-w-[200px]">{lastDeleted.label}</span>
+              </div>
+              <button 
+                onClick={handleUndo}
+                className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 transition active:scale-95"
+              >
+                Undo
+              </button>
+           </div>
         </div>
       )}
-
-      <LanguageSwitcher lang={lang} setLang={setLang} />
-      <ChatBot data={data} lang={lang} />
     </div>
   );
 };

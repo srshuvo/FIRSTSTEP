@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
 import { AppData, Product, StockOut } from '../types';
 
@@ -45,7 +44,12 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
   const calculateProfit = (log: StockOut) => {
     const p = data.products.find(prod => prod.id === log.productId);
     if (!p) return 0;
-    if (log.isSample) return log.paidAmount - ((p.costPrice || 0) * log.quantity);
+
+    if (log.isSample) {
+        const cost = (p.costPrice || 0) * log.quantity;
+        return log.paidAmount - cost;
+    }
+
     const cat = data.categories.find(c => c.id === p.categoryId);
     const isSpareParts = cat?.name.toLowerCase().includes('spare parts') || cat?.name.includes('স্পেয়ার পার্টস');
     if (isSpareParts) return (log.unitPrice * log.quantity) * 0.4;
@@ -55,8 +59,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
   const stats = useMemo(() => {
     const sOut = getFilteredLogs(data.stockOutLogs);
     const sIn = getFilteredLogs(data.stockInLogs);
-    const ledgerEntries = getFilteredLogs(data.ledgerEntries || []);
     const payments = getFilteredLogs(data.paymentLogs);
+    const ledgerEntries = getFilteredLogs(data.ledgerEntries || []);
 
     const totalSales = sOut.reduce((acc, l) => acc + l.totalPrice, 0);
     const totalPurchase = sIn.reduce((acc, l) => acc + l.totalPrice, 0);
@@ -67,149 +71,224 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
     const totalDue = data.customers.reduce((acc, c) => acc + (c.dueAmount > 0 ? c.dueAmount : 0), 0);
     const totalStockValue = data.products.reduce((acc, p) => acc + (p.stock * p.costPrice), 0);
 
-    return { totalSales, totalPurchase, netProfit, grossProfit, totalDue, totalStockValue };
+    return { 
+      totalSales, totalPurchase, netProfit, grossProfit,
+      totalDue, totalStockValue
+    };
   }, [data, dateFilter, customRange]);
 
-  const clock = useMemo(() => {
-    const d = currentTime;
-    return {
-      hours: (d.getHours() % 12 || 12).toString().padStart(2, '0'),
-      minutes: d.getMinutes().toString().padStart(2, '0'),
-      seconds: d.getSeconds().toString().padStart(2, '0'),
-      ampm: d.getHours() >= 12 ? 'PM' : 'AM'
+  const fullDates = useMemo(() => {
+    const now = currentTime;
+    const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    const bnMonths = ["বৈশাখ", "জ্যৈষ্ঠ", "আষাঢ়", "শ্রাবণ", "ভাদ্র", "আশ্বিন", "কার্তিক", "অগ্রহায়ন", "পৌষ", "মাঘ", "ফাল্গুন", "চৈত্র"];
+    
+    // Hijri Month Names in Bengali Transliteration
+    const hijriMonthsBn = [
+      "মহররম", "সফর", "রবিউল আউয়াল", "রবিউস সানি", 
+      "জমাদিউল আউয়াল", "জমাদিউস সানি", "রজব", "শাবান", 
+      "রমজান", "শাওয়াল", "জিলকদ", "জিলহজ"
+    ];
+
+    const toBn = (n: number | string) => n.toString().split('').map(d => bnDigits[parseInt(d)] || d).join('');
+
+    const getBongabdo = () => {
+      const year = now.getFullYear();
+      const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+      let start = new Date(year, 3, 14);
+      if (now < start) start.setFullYear(year - 1);
+      const diffInDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      const bYear = (now < new Date(year, 3, 14) ? year - 594 : year - 593);
+      const monthDays = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, isLeap ? 31 : 30, 30];
+      let dayCount = diffInDays + 1;
+      let mIdx = 0;
+      for (const days of monthDays) {
+        if (dayCount <= days) break;
+        dayCount -= days;
+        mIdx++;
+      }
+      return `${toBn(dayCount)} ${bnMonths[mIdx]} ${toBn(bYear)}`;
     };
+
+    const getGregorian = () => {
+      return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(now);
+    };
+
+    const getHijri = () => {
+      // Offline Hijri logic using Intl with numeric format to extract day/month/year
+      const hijriFormatter = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
+        day: 'numeric',
+        month: 'numeric',
+        year: 'numeric'
+      });
+      const parts = hijriFormatter.formatToParts(now);
+      
+      const day = parts.find(p => p.type === 'day')?.value || '';
+      const monthIndex = parseInt(parts.find(p => p.type === 'month')?.value || '1') - 1;
+      const year = parts.find(p => p.type === 'year')?.value || '';
+      
+      // Return formatted as: [Bn Day] [Bn Hijri Month] [Bn Year]
+      return `${toBn(day)} ${hijriMonthsBn[monthIndex]} ${toBn(year)}`;
+    };
+    
+    return { en: getGregorian(), bn: getBongabdo(), ar: getHijri() };
   }, [currentTime]);
+
+  const formatClock = (date: Date) => {
+    const hours = (date.getHours() % 12 || 12).toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    const ampm = date.getHours() >= 12 ? 'PM' : 'AM';
+    return { hours, minutes, seconds, ampm };
+  };
+
+  const clock = formatClock(currentTime);
 
   const t = {
     sales: lang === 'bn' ? 'মোট বিক্রি' : "Sales",
     purchase: lang === 'bn' ? 'মোট কেনা' : "Purchase",
-    profit: lang === 'bn' ? 'নীট লাভ' : "Net Profit",
+    grossProfit: lang === 'bn' ? 'মোট লাভ' : 'Gross Profit',
+    netProfit: lang === 'bn' ? 'নীট লাভ' : "Net Profit",
     due: lang === 'bn' ? 'মোট পাওনা' : 'Total Due',
-    stock: lang === 'bn' ? 'স্টক ভ্যালু' : 'Stock Value',
-    recent: lang === 'bn' ? 'সাম্প্রতিক বিক্রি' : 'Recent Sales',
-    filters: lang === 'bn' ? 'ফিল্টার' : 'Filters'
+    stockVal: lang === 'bn' ? 'স্টক ভ্যালু' : 'Stock Value',
+    stockIntel: lang === 'bn' ? 'স্টক ইনভেন্টরি' : 'Stock Intel',
+    filterLabel: lang === 'bn' ? 'ফিল্টার' : 'Filters',
+    recentSales: lang === 'bn' ? 'সাম্প্রতিক বিক্রি' : 'Recent Sales',
+    engCal: lang === 'bn' ? 'ইংরেজি' : 'English',
+    bngCal: lang === 'bn' ? 'বাংলা' : 'Bengali',
+    hijCal: lang === 'bn' ? 'হিজরি' : 'Hijri'
   };
 
   return (
     <div className="space-y-8 animate-scale-in">
-      {/* Premium Header Section */}
-      <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
-        <div className="text-center lg:text-left">
-          <h1 className="text-5xl font-black text-slate-950 tracking-tighter uppercase neon-text leading-none">FIRST STEP</h1>
-          <div className="flex items-center justify-center lg:justify-start gap-2 mt-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.5em]">Enterprise Edition v2.5</p>
+      <div className="flex flex-col xl:flex-row justify-between items-center gap-6">
+        <div className="flex flex-col justify-center">
+          <h1 className="text-4xl font-black text-slate-900 leading-none tracking-tighter neon-text uppercase">FIRST STEP</h1>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse neon-border"></span>
+            <p className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.4em]">Enterprise Khata v2.0</p>
           </div>
         </div>
 
-        <div className="bg-slate-950 px-10 py-5 rounded-[3rem] flex items-center gap-8 border-2 border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.3)] relative overflow-hidden group min-w-[320px]">
-          <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-emerald-500/10 transition-all"></div>
-          <div className="flex flex-col items-center">
-            <span className="text-[8px] font-black text-emerald-700 uppercase tracking-widest mb-2">Sync Time</span>
-            <div className="flex items-baseline font-mono-tech text-4xl font-black text-emerald-400 leading-none drop-shadow-[0_0_15px_rgba(52,211,153,0.4)]">
-              <span>{clock.hours}</span>
-              <span className="mx-1 animate-pulse opacity-50">:</span>
-              <span>{clock.minutes}</span>
-              <span className="text-xs ml-3 text-emerald-600 font-black uppercase tracking-tighter">{clock.ampm}</span>
+        <div className="no-print flex flex-wrap items-center justify-center gap-3">
+          <div className="bg-slate-950 text-emerald-400 px-6 py-4 rounded-[2.5rem] shadow-2xl flex items-center gap-5 border-2 border-slate-800 relative overflow-hidden group min-h-[85px]">
+            <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-emerald-500/10 transition-all"></div>
+            <div className="flex flex-col items-center">
+              <span className="text-[7px] font-black uppercase text-emerald-800 tracking-[0.4em] mb-1.5 leading-none">System Sync</span>
+              <div className="flex items-baseline font-mono-tech text-3xl font-black leading-none tracking-tight">
+                <span className="drop-shadow-[0_0_12px_rgba(52,211,153,0.8)]">{clock.hours}</span>
+                <span className="mx-1 text-slate-700 animate-pulse">:</span>
+                <span className="drop-shadow-[0_0_12px_rgba(52,211,153,0.8)]">{clock.minutes}</span>
+                <span className="text-[9px] ml-2 font-black text-emerald-600 uppercase tracking-tighter">{clock.ampm}</span>
+              </div>
+            </div>
+            <div className="w-[1px] h-10 bg-slate-800 rounded-full opacity-50"></div>
+            <div className="flex flex-col items-center justify-center">
+               <span className="text-xs font-black text-emerald-500 font-mono-tech">{clock.seconds}</span>
+               <div className="w-2 h-2 bg-emerald-400/20 rounded-full mt-2 flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping"></div>
+               </div>
             </div>
           </div>
-          <div className="w-[1px] h-12 bg-slate-800"></div>
-          <div className="flex flex-col items-center justify-center">
-            <span className="text-lg font-black text-emerald-500/80 font-mono-tech">{clock.seconds}</span>
-            <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 animate-ping shadow-[0_0_10px_#10b981]"></div>
-          </div>
+
+          <CalendarCard label={t.engCal} date={fullDates.en} icon="fa-calendar-days" />
+          <CalendarCard label={t.bngCal} date={fullDates.bn} icon="fa-language" glow />
+          <CalendarCard label={t.hijCal} date={fullDates.ar} icon="fa-moon" />
         </div>
       </div>
 
-      {/* Modern Filter Bar */}
-      <div className="bg-white/70 backdrop-blur-xl p-3 rounded-[3rem] border border-slate-200/50 flex flex-wrap gap-2 items-center sticky top-4 z-40 no-print shadow-xl shadow-slate-200/40">
-        <div className="px-5 py-3 bg-slate-950 rounded-full flex items-center gap-3">
+      <div className="bg-white/80 backdrop-blur-md p-3 rounded-[3rem] shadow-sm border border-slate-100 flex flex-wrap gap-2 items-center no-print sticky top-4 z-20">
+        <div className="flex items-center gap-2 px-5 py-2.5 bg-slate-950 rounded-full border border-slate-800 mr-2">
            <i className="fas fa-microchip text-emerald-500 text-[10px] animate-pulse"></i>
-           <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">{t.filters}</span>
+           <span className="text-[10px] font-black uppercase text-emerald-500 tracking-[0.2em]">{t.filterLabel}</span>
         </div>
-        {['today', '7days', 'month', '6months', '12months'].map(f => (
+        {['today', '7days', 'month', '6months', '12months', 'custom'].map(f => (
           <button
             key={f}
             onClick={() => setDateFilter(f as any)}
-            className={`px-7 py-3 rounded-full text-[11px] font-black uppercase tracking-widest transition-all duration-500 ${dateFilter === f ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-200 scale-105 neon-border' : 'text-slate-500 hover:bg-emerald-50 border border-transparent'}`}
+            className={`px-6 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-500 ${dateFilter === f ? 'bg-emerald-600 text-white shadow-2xl shadow-emerald-200 scale-105 neon-border' : 'text-slate-500 hover:bg-emerald-50 border border-transparent'}`}
           >
-            {lang === 'bn' ? (f === 'today' ? 'আজ' : f === '7days' ? '৭ দিন' : f === 'month' ? '১ মাস' : f === '6months' ? '৬ মাস' : '১ বছর') : f}
+            {lang === 'bn' ? (f === 'today' ? 'আজ' : f === '7days' ? '৭ দিন' : f === 'month' ? '১ মাস' : f === '6months' ? '৬ মাস' : f === '12months' ? '১২ মাস' : 'কাস্টম') : f}
           </button>
         ))}
+        {dateFilter === 'custom' && (
+          <div className="flex items-center gap-2 ml-4">
+            <input type="date" value={customRange.start} onChange={e => setCustomRange({...customRange, start: e.target.value})} className="px-3 py-1 text-xs border rounded-lg outline-none focus:ring-1 focus:ring-emerald-500" />
+            <span className="text-gray-400">-</span>
+            <input type="date" value={customRange.end} onChange={e => setCustomRange({...customRange, end: e.target.value})} className="px-3 py-1 text-xs border rounded-lg outline-none focus:ring-1 focus:ring-emerald-500" />
+          </div>
+        )}
       </div>
 
-      {/* KPI Section with Responsive Sizing */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6">
-        <KPICard title={t.sales} value={`৳${stats.totalSales.toLocaleString()}`} icon="fa-wallet" color="bg-blue-600" />
-        <KPICard title={t.purchase} value={`৳${stats.totalPurchase.toLocaleString()}`} icon="fa-cart-shopping" color="bg-orange-500" />
-        <KPICard title={t.stock} value={`৳${stats.totalStockValue.toLocaleString()}`} icon="fa-cubes-stacked" color="bg-indigo-600" />
-        <KPICard title={t.profit} value={`৳${stats.netProfit.toLocaleString()}`} icon="fa-chart-line" color="bg-emerald-600" />
-        <KPICard title={t.due} value={`৳${stats.totalDue.toLocaleString()}`} icon="fa-user-clock" color="bg-rose-500" />
-        <KPICard title={lang === 'bn' ? 'স্টক আইটেম' : 'Total Items'} value={data.products.length.toString()} icon="fa-tags" color="bg-slate-800" />
-      </div>
+      <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6">
+        <KPICard title={t.sales} value={`৳${stats.totalSales.toLocaleString()}`} icon="fa-wallet" color="blue" />
+        <KPICard title={t.purchase} value={`৳${stats.totalPurchase.toLocaleString()}`} icon="fa-cart-flatbed" color="orange" />
+        <KPICard title={t.stockVal} value={`৳${stats.totalStockValue.toLocaleString()}`} icon="fa-boxes-stacked" color="indigo" />
+        <KPICard title={t.grossProfit} value={`৳${stats.grossProfit.toLocaleString()}`} icon="fa-money-bill-trend-up" color="emerald-light" />
+        <KPICard title={t.netProfit} value={`৳${stats.netProfit.toLocaleString()}`} icon="fa-chart-line" color="emerald" />
+        <KPICard title={t.due} value={`৳${stats.totalDue.toLocaleString()}`} icon="fa-user-clock" color="red" />
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        {/* Inventory Status Card */}
-        <div className="bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.02)] relative overflow-hidden group">
-           <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-700">
-             <i className="fas fa-boxes-packing text-[120px] text-emerald-600"></i>
-           </div>
-           <div className="flex justify-between items-center mb-10">
-             <h3 className="font-black text-slate-900 text-xs uppercase tracking-[0.25em] flex items-center gap-4">
-                <div className="w-2 h-8 bg-emerald-500 rounded-full shadow-[0_0_10px_#10b981]"></div>
-                {lang === 'bn' ? 'স্টক ইনভেন্টরি অবস্থা' : 'Stock Inventory Status'}
-             </h3>
-             <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100 tracking-widest uppercase">Live Scan</span>
-           </div>
-           <div className="space-y-4 relative z-10">
-              {data.products.slice(0, 6).map(p => {
-                 const isLow = p.stock <= (p.lowStockThreshold || 10);
-                 return (
-                   <div key={p.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-3xl border border-transparent hover:border-emerald-100 hover:bg-white transition-all duration-300 shadow-sm hover:shadow-xl group/item">
-                      <div className="flex flex-col">
-                         <span className="font-black text-slate-800 text-sm group-hover/item:text-emerald-700 transition-colors">{p.name}</span>
-                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{p.unit} Base Unit</span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                         <div className="flex flex-col items-end">
-                            <span className={`text-sm font-black px-5 py-2 rounded-2xl shadow-inner ${isLow ? 'bg-rose-100 text-rose-600 border border-rose-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
-                              {p.stock} <span className="text-[10px] opacity-70 ml-1">{p.unit}</span>
-                            </span>
-                         </div>
-                         {isLow && <div className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></div>}
-                      </div>
-                   </div>
-                 );
-              })}
-           </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-white p-8 rounded-[3.5rem] shadow-sm border border-slate-100 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <i className="fas fa-layer-group text-8xl text-emerald-600"></i>
+          </div>
+          <div className="flex justify-between items-center mb-8 relative z-10">
+            <h3 className="font-black text-slate-900 text-sm uppercase tracking-[0.2em] flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center border border-emerald-100">
+                 <i className="fas fa-cubes-stacked text-emerald-600 text-sm"></i>
+              </div>
+              {t.stockIntel}
+            </h3>
+            <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-widest border border-emerald-100">Live Asset Tracking</span>
+          </div>
+          <div className="overflow-x-auto relative z-10">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-400 font-black uppercase tracking-[0.15em]">
+                <tr>
+                  <th className="px-6 py-4 rounded-l-3xl">{lang === 'bn' ? 'পণ্যের নাম' : 'Name'}</th>
+                  <th className="px-6 py-4 text-center">{lang === 'bn' ? 'স্টক' : 'Qty'}</th>
+                  <th className="px-6 py-4 text-center rounded-r-3xl">{lang === 'bn' ? 'স্ট্যাটাস' : 'Status'}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {data.products.slice(0, 6).map(p => {
+                  const status = p.stock <= 0 ? 'Empty' : (p.stock <= (p.lowStockThreshold || 10) ? 'Low' : 'OK');
+                  const color = status === 'Empty' ? 'bg-rose-500 shadow-rose-100' : (status === 'Low' ? 'bg-amber-500 shadow-amber-100' : 'bg-emerald-500 shadow-emerald-100');
+                  return (
+                    <tr key={p.id} className="hover:bg-slate-50/50 transition-all group">
+                      <td className="px-6 py-5 font-black text-slate-700">{p.name}</td>
+                      <td className="px-6 py-5 text-center font-bold text-slate-500">{p.stock} <span className="text-[9px] uppercase">{p.unit}</span></td>
+                      <td className="px-6 py-5 text-center">
+                        <span className={`text-[8px] px-4 py-1.5 rounded-xl text-white font-black uppercase shadow-lg inline-block transition-transform group-hover:scale-110 ${color}`}>{status}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* Recent Transactions Card */}
-        <div className="bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.02)]">
-           <h3 className="font-black text-slate-900 text-xs uppercase tracking-[0.25em] mb-10 flex items-center gap-4">
-              <div className="w-2 h-8 bg-blue-500 rounded-full shadow-[0_0_10px_#3b82f6]"></div>
-              {t.recent}
-           </h3>
-           <div className="space-y-4">
-              {data.stockOutLogs.slice(0, 6).map(l => (
-                <div key={l.id} className="flex items-center justify-between p-5 bg-gray-50/50 rounded-3xl border border-transparent hover:border-blue-100 hover:bg-white transition-all duration-300 shadow-sm hover:shadow-xl">
-                   <div className="flex flex-col">
-                      <span className="font-black text-slate-800 text-sm">{data.customers.find(c => c.id === l.customerId)?.name || 'Walk-in'}</span>
-                      <span className="text-[10px] font-bold text-slate-400 mt-1 flex items-center gap-2">
-                        <i className="fas fa-clock text-[8px]"></i> {l.date}
-                      </span>
-                   </div>
-                   <div className="text-right">
-                      <span className="text-lg font-black text-emerald-600 font-mono-tech">৳{l.totalPrice.toLocaleString()}</span>
-                   </div>
-                </div>
-              ))}
-              {data.stockOutLogs.length === 0 && (
-                <div className="text-center py-20 flex flex-col items-center">
-                   <i className="fas fa-receipt text-5xl text-gray-100 mb-4"></i>
-                   <p className="text-gray-400 italic font-black text-[10px] uppercase tracking-widest">No Recent Transactions Found</p>
-                </div>
-              )}
+        <div className="space-y-6">
+           <div className="bg-white p-8 rounded-[3.5rem] shadow-sm border border-slate-100">
+             <h3 className="font-black text-slate-900 text-[10px] uppercase tracking-[0.25em] mb-6 flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-blue-500 neon-border"></div>
+                {t.recentSales}
+             </h3>
+             <table className="w-full text-left text-[11px]">
+               <tbody className="divide-y divide-slate-50">
+                 {data.stockOutLogs.slice(0, 5).map(l => (
+                   <tr key={l.id} className="hover:bg-blue-50/30 transition-all group rounded-2xl">
+                     <td className="p-4 text-slate-400 font-medium whitespace-nowrap">{l.date}</td>
+                     <td className="p-4 font-black text-slate-800">{data.customers.find(c => c.id === l.customerId)?.name || 'Guest'}</td>
+                     <td className="p-4 text-right">
+                       <span className="font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white transition-all">৳{l.totalPrice}</span>
+                     </td>
+                   </tr>
+                 ))}
+               </tbody>
+             </table>
            </div>
         </div>
       </div>
@@ -217,27 +296,49 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
   );
 };
 
+const CalendarCard = ({ label, date, icon, glow }: { label: string, date: string, icon: string, glow?: boolean }) => {
+  return (
+    <div className={`bg-slate-950 ${glow ? 'text-emerald-300 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'text-emerald-400/80 border-slate-800 shadow-xl'} px-6 py-4 rounded-[2.5rem] border-2 flex flex-col items-center justify-center min-w-[170px] min-h-[85px] transition-all duration-300 hover:scale-105 group relative overflow-hidden`}>
+      <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-emerald-500/10 transition-all"></div>
+      <div className="flex items-center gap-2 mb-2 opacity-60">
+        <i className={`fas ${icon} text-[10px] drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]`}></i>
+        <span className="text-[7px] font-black uppercase tracking-[0.3em]">{label}</span>
+      </div>
+      <p className="text-[12px] font-black tracking-tighter text-center leading-tight drop-shadow-[0_0_8px_rgba(52,211,153,0.4)] whitespace-nowrap">{date}</p>
+    </div>
+  );
+};
+
 const KPICard = ({ title, value, icon, color }: any) => {
-  const valLen = value?.length || 0;
-  let valClass = 'text-3xl';
-  if (valLen > 15) valClass = 'text-[11px]';
-  else if (valLen > 12) valClass = 'text-sm';
-  else if (valLen > 9) valClass = 'text-xl';
+  const colorMap: any = {
+    blue: 'bg-blue-600 text-blue-700 shadow-blue-100 border-blue-100',
+    orange: 'bg-amber-500 text-amber-600 shadow-amber-100 border-amber-100',
+    emerald: 'bg-emerald-600 text-emerald-700 shadow-emerald-100 border-emerald-100',
+    'emerald-light': 'bg-emerald-400 text-emerald-500 shadow-emerald-50 border-emerald-50',
+    red: 'bg-rose-500 text-rose-600 shadow-rose-100 border-rose-100',
+    indigo: 'bg-indigo-600 text-indigo-700 shadow-indigo-100 border-indigo-100',
+  };
+  const [bg, text, shadow, border] = colorMap[color].split(' ');
+  
+  // FIXED: Adaptive font size and overflow control for large values
+  const valLen = value?.toString().length || 0;
+  let valFontSizeClass = 'text-xl sm:text-2xl';
+  if (valLen > 14) valFontSizeClass = 'text-[12px] leading-tight break-all';
+  else if (valLen > 11) valFontSizeClass = 'text-sm sm:text-base break-all';
+  else if (valLen > 8) valFontSizeClass = 'text-base sm:text-lg break-all sm:break-normal';
 
   return (
-    <div className="bg-white p-6 rounded-[2.8rem] border border-slate-100 shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.04)] hover:scale-[1.03] transition-all duration-500 group overflow-hidden relative flex flex-col min-h-[135px] min-w-0">
-      <div className={`absolute -top-12 -right-12 w-32 h-32 ${color} opacity-5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700`}></div>
-      <div className="flex items-center gap-4 mb-4">
-        <div className={`w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center text-white shadow-xl ${color} transition-all duration-500 group-hover:rotate-12 group-hover:scale-110`}>
-           <i className={`fas ${icon} text-lg`}></i>
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate group-hover:text-slate-600 transition-colors">{title}</p>
-        </div>
+    <div className="bg-white p-4 sm:p-5 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center gap-3 hover:shadow-2xl transition-all duration-500 group relative overflow-hidden h-full min-h-[100px] min-w-0">
+      <div className={`absolute -top-12 -right-12 w-28 h-28 ${bg} opacity-5 rounded-full blur-2xl transition-all group-hover:scale-150`}></div>
+      <div className={`w-11 h-11 shrink-0 rounded-[1.4rem] flex items-center justify-center text-lg text-white shadow-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-12 z-10 ${bg}`}>
+        <i className={`fas ${icon} tech-icon`}></i>
       </div>
-      <p className={`font-black tracking-tighter text-slate-950 leading-none truncate break-all transition-all ${valClass} group-hover:translate-x-1`}>
-        {value}
-      </p>
+      <div className="z-10 min-w-0 flex-1 overflow-hidden">
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-0.5 truncate">{title}</p>
+        <p className={`font-black tracking-tighter ${text} drop-shadow-sm transition-all duration-300 ${valFontSizeClass}`}>
+          {value}
+        </p>
+      </div>
     </div>
   );
 };
