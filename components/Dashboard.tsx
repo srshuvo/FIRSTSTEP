@@ -201,7 +201,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         )}
       </div>
 
-      <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6">
+      <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-5">
         <KPICard title={t.sales} value={`৳${stats.totalSales.toLocaleString()}`} icon="fa-wallet" color="blue" />
         <KPICard title={t.purchase} value={`৳${stats.totalPurchase.toLocaleString()}`} icon="fa-cart-flatbed" color="orange" />
         <KPICard title={t.stockVal} value={`৳${stats.totalStockValue.toLocaleString()}`} icon="fa-boxes-stacked" color="indigo" />
@@ -302,19 +302,22 @@ const KPICard = ({ title, value, icon, color }: any) => {
   };
   const [bg, text, shadow, border] = colorMap[color].split(' ');
   
-  // Adaptive font size based on value length
+  // Adaptive font size based on value length and container constraints
   const valLen = value?.length || 0;
-  const valClass = valLen > 12 ? 'text-sm sm:text-base' : (valLen > 8 ? 'text-base sm:text-lg' : 'text-xl sm:text-2xl');
+  let valClass = 'text-xl sm:text-2xl';
+  if (valLen > 15) valClass = 'text-[11px] sm:text-sm';
+  else if (valLen > 11) valClass = 'text-sm sm:text-base';
+  else if (valLen > 8) valClass = 'text-base sm:text-lg';
 
   return (
-    <div className="bg-white p-4 sm:p-5 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center gap-3 hover:shadow-2xl transition-all duration-500 group relative overflow-hidden h-full min-h-[100px]">
+    <div className="bg-white p-3.5 sm:p-5 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center gap-3 hover:shadow-2xl transition-all duration-500 group relative overflow-hidden h-full min-h-[90px] min-w-0">
       <div className={`absolute -top-12 -right-12 w-28 h-28 ${bg} opacity-5 rounded-full blur-2xl transition-all group-hover:scale-150`}></div>
-      <div className={`w-11 h-11 shrink-0 rounded-[1.4rem] flex items-center justify-center text-lg text-white shadow-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-12 z-10 ${bg}`}>
+      <div className={`w-10 h-10 shrink-0 rounded-[1.2rem] flex items-center justify-center text-base text-white shadow-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-12 z-10 ${bg}`}>
         <i className={`fas ${icon} tech-icon`}></i>
       </div>
       <div className="z-10 min-w-0 flex-1 overflow-hidden">
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-0.5 truncate">{title}</p>
-        <p className={`font-black tracking-tighter ${text} drop-shadow-sm truncate ${valClass}`}>{value}</p>
+        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.1em] mb-0.5 truncate">{title}</p>
+        <p className={`font-black tracking-tighter ${text} drop-shadow-sm truncate break-all ${valClass}`}>{value}</p>
       </div>
     </div>
   );

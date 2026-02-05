@@ -30,7 +30,8 @@ const ChatBot: React.FC<ChatBotProps> = ({ data, lang }) => {
     title: lang === 'bn' ? 'এআই সহায়ক' : 'AI Assistant',
     placeholder: lang === 'bn' ? 'কিছু জিজ্ঞেস করুন...' : 'Ask something...',
     welcome: lang === 'bn' ? 'হ্যালো! আমি আপনার ডিজিটাল খাতা সহকারী। আমি কীভাবে আপনাকে সাহায্য করতে পারি?' : 'Hello! I am your Digital Khata assistant. How can I help you today?',
-    error: lang === 'bn' ? 'দুঃখিত, কোনো সমস্যা হয়েছে।' : 'Sorry, something went wrong.'
+    error: lang === 'bn' ? 'দুঃখিত, এআই সার্ভারের সাথে সংযোগ করা যাচ্ছে না। দয়া করে আপনার API Key চেক করুন।' : 'Sorry, cannot connect to AI server. Please check your API Key configuration.',
+    thinking: lang === 'bn' ? 'এআই চিন্তা করছে...' : 'AI is thinking...'
   };
 
   const generateSystemInstruction = () => {
@@ -38,13 +39,13 @@ const ChatBot: React.FC<ChatBotProps> = ({ data, lang }) => {
     const totalDue = data.customers.reduce((acc, c) => acc + (c.dueAmount > 0 ? c.dueAmount : 0), 0);
     const totalSales = data.stockOutLogs.reduce((acc, l) => acc + l.totalPrice, 0);
 
-    return `You are a helpful business assistant for a shop called "FIRST STEP". 
+    return `You are a helpful business assistant for a shop management software called "FIRST STEP". 
     Context:
-    - Current Language: ${lang === 'bn' ? 'Bengali' : 'English'}. Respond strictly in this language.
-    - Shop Stats: Total Sales is ৳${totalSales}, Total Customer Due is ৳${totalDue}.
-    - Inventory: Items low on stock are: ${lowStock || 'None'}.
-    - Data: You have access to products, customers, and transaction logs.
-    Answer concisely and professionally. Focus on helping the owner manage their inventory and sales better.`;
+    - Language: ${lang === 'bn' ? 'Bengali (বাংলা)' : 'English'}. Respond ONLY in this language.
+    - Shop Stats: Total Sales = ৳${totalSales}, Total Outstanding Receivables = ৳${totalDue}.
+    - Low Stock Items: ${lowStock || 'All items are sufficiently stocked'}.
+    - Expense Tracking: Expenses are recorded in the "Ananya Expense" (অনন্যা ব্যায়) ledger.
+    - Instructions: Be precise, helpful, and professional. If asked about business performance, use the provided stats.`;
   };
 
   const handleSend = async () => {
@@ -56,7 +57,13 @@ const ChatBot: React.FC<ChatBotProps> = ({ data, lang }) => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const apiKey = process.env.API_KEY;
+      if (!apiKey) {
+        console.error("Gemini API Key is missing in process.env.API_KEY");
+        throw new Error("Missing API Key");
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
       const chat = ai.chats.create({
         model: 'gemini-3-flash-preview',
         config: {
@@ -70,7 +77,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ data, lang }) => {
       
       setMessages(prev => [...prev, { role: 'model', text: botText }]);
     } catch (err) {
-      console.error(err);
+      console.error("ChatBot Error:", err);
       setMessages(prev => [...prev, { role: 'model', text: t.error }]);
     } finally {
       setIsLoading(false);
@@ -82,37 +89,38 @@ const ChatBot: React.FC<ChatBotProps> = ({ data, lang }) => {
       {isOpen && (
         <div className="absolute bottom-16 right-0 bg-white rounded-3xl shadow-2xl border border-gray-100 w-[320px] md:w-[380px] h-[500px] flex flex-col overflow-hidden animate-scale-in">
           {/* Header */}
-          <div className="bg-emerald-900 p-4 text-white flex justify-between items-center">
+          <div className="bg-slate-950 p-4 text-white flex justify-between items-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center animate-pulse">
-                <i className="fas fa-robot text-xs"></i>
+              <div className="w-10 h-10 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-900/40">
+                <i className="fas fa-robot text-lg"></i>
               </div>
               <div>
-                <h3 className="font-black text-sm uppercase tracking-tighter">{t.title}</h3>
+                <h3 className="font-black text-xs uppercase tracking-widest">{t.title}</h3>
                 <div className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  <span className="text-[8px] font-bold text-emerald-300 uppercase">Online</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="text-[8px] font-bold text-emerald-500 uppercase">System Active</span>
                 </div>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="text-emerald-300 hover:text-white transition">
-              <i className="fas fa-times"></i>
+            <button onClick={() => setIsOpen(false)} className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition">
+              <i className="fas fa-times text-slate-400"></i>
             </button>
           </div>
 
           {/* Messages */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 custom-scrollbar">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 custom-scrollbar">
             <div className="flex gap-2">
-               <div className="bg-emerald-100 text-emerald-800 p-3 rounded-2xl rounded-tl-none text-xs font-bold shadow-sm max-w-[85%]">
+               <div className="bg-emerald-100 text-emerald-900 p-4 rounded-2xl rounded-tl-none text-xs font-bold shadow-sm max-w-[85%] border border-emerald-200">
                  {t.welcome}
                </div>
             </div>
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`p-3 rounded-2xl text-xs font-bold shadow-sm max-w-[85%] ${
+                <div className={`p-4 rounded-2xl text-xs font-bold shadow-sm max-w-[85%] leading-relaxed ${
                   m.role === 'user' 
                     ? 'bg-emerald-600 text-white rounded-tr-none' 
-                    : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
+                    : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none'
                 }`}>
                   {m.text}
                 </div>
@@ -120,8 +128,13 @@ const ChatBot: React.FC<ChatBotProps> = ({ data, lang }) => {
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-white p-3 rounded-2xl rounded-tl-none text-gray-400 border border-gray-100 italic text-[10px] font-black uppercase flex items-center gap-2">
-                  <i className="fas fa-circle-notch fa-spin"></i> {lang === 'bn' ? 'এআই চিন্তা করছে...' : 'AI is thinking...'}
+                <div className="bg-white p-4 rounded-2xl rounded-tl-none text-slate-400 border border-slate-100 italic text-[9px] font-black uppercase flex items-center gap-3">
+                  <div className="flex gap-1">
+                    <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce"></span>
+                    <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                    <span className="w-1 h-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                  </div>
+                  {t.thinking}
                 </div>
               </div>
             )}
@@ -135,12 +148,12 @@ const ChatBot: React.FC<ChatBotProps> = ({ data, lang }) => {
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSend()}
                 placeholder={t.placeholder}
-                className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 transition"
+                className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3.5 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 transition placeholder:text-gray-300"
               />
               <button 
                 onClick={handleSend}
                 disabled={isLoading || !input.trim()}
-                className="w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center hover:bg-emerald-700 transition disabled:opacity-50"
+                className="w-12 h-12 bg-emerald-600 text-white rounded-2xl flex items-center justify-center hover:bg-emerald-700 transition disabled:opacity-30 shadow-lg shadow-emerald-900/10 active:scale-95"
               >
                 <i className="fas fa-paper-plane text-sm"></i>
               </button>
@@ -152,11 +165,11 @@ const ChatBot: React.FC<ChatBotProps> = ({ data, lang }) => {
       {/* Toggle Button */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-emerald-900 text-white rounded-full shadow-2xl flex items-center justify-center text-xl hover:bg-black transition transform active:scale-90 border-4 border-emerald-800/20 group relative"
+        className="w-16 h-16 bg-slate-950 text-white rounded-full shadow-2xl flex items-center justify-center text-2xl hover:bg-black transition transform active:scale-90 border-4 border-slate-800 group relative"
       >
-        <i className={`fas ${isOpen ? 'fa-times' : 'fa-robot'} group-hover:rotate-12 transition-transform`}></i>
+        <i className={`fas ${isOpen ? 'fa-times' : 'fa-robot'} transition-transform group-hover:rotate-12`}></i>
         {!isOpen && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-bounce"></span>
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white animate-pulse"></span>
         )}
       </button>
     </div>
