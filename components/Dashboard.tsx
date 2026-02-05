@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState, useEffect } from 'react';
 import { AppData, Product, StockOut } from '../types';
 
@@ -77,17 +78,46 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
     };
   }, [data, dateFilter, customRange]);
 
+  const catPerformance = useMemo(() => {
+    const sOut = getFilteredLogs(data.stockOutLogs);
+    const performanceMap: Record<string, { name: string; stock: number; stockVal: number; sales: number; profit: number }> = {};
+    
+    // Initialize performance map with ALL categories
+    data.categories.forEach(cat => {
+      performanceMap[cat.id] = { name: cat.name, stock: 0, stockVal: 0, sales: 0, profit: 0 };
+    });
+    
+    // Always include Uncategorized in the summary
+    performanceMap['none'] = { name: lang === 'bn' ? 'ক্যাটাগরি ছাড়া' : 'Uncategorized', stock: 0, stockVal: 0, sales: 0, profit: 0 };
+
+    // Group Products for Stock & Value
+    data.products.forEach(p => {
+      const catId = p.categoryId || 'none';
+      if (performanceMap[catId]) {
+        performanceMap[catId].stock += p.stock;
+        performanceMap[catId].stockVal += (p.stock * p.costPrice);
+      }
+    });
+
+    // Group Sales for Sales & Profit
+    sOut.forEach(log => {
+      const p = data.products.find(prod => prod.id === log.productId);
+      const catId = p?.categoryId || 'none';
+      if (performanceMap[catId]) {
+        performanceMap[catId].sales += log.totalPrice;
+        performanceMap[catId].profit += calculateProfit(log);
+      }
+    });
+
+    // Return ALL values (no filtering) to show all categories as requested
+    return Object.values(performanceMap);
+  }, [data, dateFilter, customRange, lang]);
+
   const fullDates = useMemo(() => {
     const now = currentTime;
     const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
     const bnMonths = ["বৈশাখ", "জ্যৈষ্ঠ", "আষাঢ়", "শ্রাবণ", "ভাদ্র", "আশ্বিন", "কার্তিক", "অগ্রহায়ন", "পৌষ", "মাঘ", "ফাল্গুন", "চৈত্র"];
-    
-    // Hijri Month Names in Bengali Transliteration
-    const hijriMonthsBn = [
-      "মহররম", "সফর", "রবিউল আউয়াল", "রবিউস সানি", 
-      "জমাদিউল আউয়াল", "জমাদিউস সানি", "রজব", "শাবান", 
-      "রমজান", "শাওয়াল", "জিলকদ", "জিলহজ"
-    ];
+    const hijriMonthsBn = ["মহররম", "সফর", "রবিউল আউয়াল", "রবিউস সানি", "জমাদিউল আউয়াল", "জমাদিউস সানি", "রজব", "শাবান", "রমজান", "শাওয়াল", "জিলকদ", "জিলহজ"];
 
     const toBn = (n: number | string) => n.toString().split('').map(d => bnDigits[parseInt(d)] || d).join('');
 
@@ -109,28 +139,20 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
       return `${toBn(dayCount)} ${bnMonths[mIdx]} ${toBn(bYear)}`;
     };
 
-    const getGregorian = () => {
-      return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(now);
-    };
-
     const getHijri = () => {
-      // Offline Hijri logic using Intl with numeric format to extract day/month/year
-      const hijriFormatter = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
-        day: 'numeric',
-        month: 'numeric',
-        year: 'numeric'
-      });
+      const hijriFormatter = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', { day: 'numeric', month: 'numeric', year: 'numeric' });
       const parts = hijriFormatter.formatToParts(now);
-      
       const day = parts.find(p => p.type === 'day')?.value || '';
       const monthIndex = parseInt(parts.find(p => p.type === 'month')?.value || '1') - 1;
       const year = parts.find(p => p.type === 'year')?.value || '';
-      
-      // Return formatted as: [Bn Day] [Bn Hijri Month] [Bn Year]
       return `${toBn(day)} ${hijriMonthsBn[monthIndex]} ${toBn(year)}`;
     };
     
-    return { en: getGregorian(), bn: getBongabdo(), ar: getHijri() };
+    return { 
+      en: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(now), 
+      bn: getBongabdo(), 
+      ar: getHijri() 
+    };
   }, [currentTime]);
 
   const formatClock = (date: Date) => {
@@ -150,8 +172,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
     netProfit: lang === 'bn' ? 'নীট লাভ' : "Net Profit",
     due: lang === 'bn' ? 'মোট পাওনা' : 'Total Due',
     stockVal: lang === 'bn' ? 'স্টক ভ্যালু' : 'Stock Value',
-    stockIntel: lang === 'bn' ? 'স্টক ইনভেন্টরি' : 'Stock Intel',
-    filterLabel: lang === 'bn' ? 'ফিল্টার' : 'Filters',
+    catPerformance: lang === 'bn' ? 'ক্যাটাগরি পারফরম্যান্স' : 'Category Performance',
     recentSales: lang === 'bn' ? 'সাম্প্রতিক বিক্রি' : 'Recent Sales',
     engCal: lang === 'bn' ? 'ইংরেজি' : 'English',
     bngCal: lang === 'bn' ? 'বাংলা' : 'Bengali',
@@ -199,7 +220,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
       <div className="bg-white/80 backdrop-blur-md p-3 rounded-[3rem] shadow-sm border border-slate-100 flex flex-wrap gap-2 items-center no-print sticky top-4 z-20">
         <div className="flex items-center gap-2 px-5 py-2.5 bg-slate-950 rounded-full border border-slate-800 mr-2">
            <i className="fas fa-microchip text-emerald-500 text-[10px] animate-pulse"></i>
-           <span className="text-[10px] font-black uppercase text-emerald-500 tracking-[0.2em]">{t.filterLabel}</span>
+           <span className="text-[10px] font-black uppercase text-emerald-500 tracking-[0.2em]">Filters</span>
         </div>
         {['today', '7days', 'month', '6months', '12months', 'custom'].map(f => (
           <button
@@ -210,13 +231,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
             {lang === 'bn' ? (f === 'today' ? 'আজ' : f === '7days' ? '৭ দিন' : f === 'month' ? '১ মাস' : f === '6months' ? '৬ মাস' : f === '12months' ? '১২ মাস' : 'কাস্টম') : f}
           </button>
         ))}
-        {dateFilter === 'custom' && (
-          <div className="flex items-center gap-2 ml-4">
-            <input type="date" value={customRange.start} onChange={e => setCustomRange({...customRange, start: e.target.value})} className="px-3 py-1 text-xs border rounded-lg outline-none focus:ring-1 focus:ring-emerald-500" />
-            <span className="text-gray-400">-</span>
-            <input type="date" value={customRange.end} onChange={e => setCustomRange({...customRange, end: e.target.value})} className="px-3 py-1 text-xs border rounded-lg outline-none focus:ring-1 focus:ring-emerald-500" />
-          </div>
-        )}
       </div>
 
       <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6">
@@ -228,114 +242,76 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         <KPICard title={t.due} value={`৳${stats.totalDue.toLocaleString()}`} icon="fa-user-clock" color="red" />
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-8 rounded-[3.5rem] shadow-sm border border-slate-100 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-            <i className="fas fa-layer-group text-8xl text-emerald-600"></i>
-          </div>
-          <div className="flex justify-between items-center mb-8 relative z-10">
+      <div className="bg-white p-8 rounded-[3.5rem] shadow-sm border border-slate-100 relative overflow-hidden">
+        <div className="flex justify-between items-center mb-8">
             <h3 className="font-black text-slate-900 text-sm uppercase tracking-[0.2em] flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center border border-emerald-100">
-                 <i className="fas fa-cubes-stacked text-emerald-600 text-sm"></i>
+              <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100">
+                 <i className="fas fa-chart-pie text-indigo-600 text-sm"></i>
               </div>
-              {t.stockIntel}
+              {t.catPerformance}
             </h3>
-            <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-widest border border-emerald-100">Live Asset Tracking</span>
-          </div>
-          <div className="overflow-x-auto relative z-10">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-400 font-black uppercase tracking-[0.15em]">
-                <tr>
-                  <th className="px-6 py-4 rounded-l-3xl">{lang === 'bn' ? 'পণ্যের নাম' : 'Name'}</th>
-                  <th className="px-6 py-4 text-center">{lang === 'bn' ? 'স্টক' : 'Qty'}</th>
-                  <th className="px-6 py-4 text-center rounded-r-3xl">{lang === 'bn' ? 'স্ট্যাটাস' : 'Status'}</th>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 text-slate-400 font-black uppercase tracking-[0.15em]">
+              <tr>
+                <th className="px-6 py-4 rounded-l-3xl">{lang === 'bn' ? 'ক্যাটাগরি' : 'Category'}</th>
+                <th className="px-6 py-4 text-center">{lang === 'bn' ? 'স্টক পরিমাণ' : 'Stock Qty'}</th>
+                <th className="px-6 py-4 text-center">{lang === 'bn' ? 'স্টক ভ্যালু' : 'Stock Value'}</th>
+                <th className="px-6 py-4 text-center">{lang === 'bn' ? 'মোট বিক্রি' : 'Sales'}</th>
+                <th className="px-6 py-4 text-right rounded-r-3xl">{lang === 'bn' ? 'লাভ' : 'Profit'}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {catPerformance.map((p, idx) => (
+                <tr key={idx} className="hover:bg-indigo-50/20 transition-all group">
+                  <td className="px-6 py-5 font-black text-slate-800">{p.name}</td>
+                  <td className="px-6 py-5 text-center font-bold text-slate-500">{p.stock}</td>
+                  <td className="px-6 py-5 text-center font-black text-slate-700">৳{p.stockVal.toLocaleString()}</td>
+                  <td className="px-6 py-5 text-center font-black text-blue-600">৳{p.sales.toLocaleString()}</td>
+                  <td className="px-6 py-5 text-right font-black text-emerald-600">৳{p.profit.toLocaleString()}</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {data.products.slice(0, 6).map(p => {
-                  const status = p.stock <= 0 ? 'Empty' : (p.stock <= (p.lowStockThreshold || 10) ? 'Low' : 'OK');
-                  const color = status === 'Empty' ? 'bg-rose-500 shadow-rose-100' : (status === 'Low' ? 'bg-amber-500 shadow-amber-100' : 'bg-emerald-500 shadow-emerald-100');
-                  return (
-                    <tr key={p.id} className="hover:bg-slate-50/50 transition-all group">
-                      <td className="px-6 py-5 font-black text-slate-700">{p.name}</td>
-                      <td className="px-6 py-5 text-center font-bold text-slate-500">{p.stock} <span className="text-[9px] uppercase">{p.unit}</span></td>
-                      <td className="px-6 py-5 text-center">
-                        <span className={`text-[8px] px-4 py-1.5 rounded-xl text-white font-black uppercase shadow-lg inline-block transition-transform group-hover:scale-110 ${color}`}>{status}</span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-           <div className="bg-white p-8 rounded-[3.5rem] shadow-sm border border-slate-100">
-             <h3 className="font-black text-slate-900 text-[10px] uppercase tracking-[0.25em] mb-6 flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-blue-500 neon-border"></div>
-                {t.recentSales}
-             </h3>
-             <table className="w-full text-left text-[11px]">
-               <tbody className="divide-y divide-slate-50">
-                 {data.stockOutLogs.slice(0, 5).map(l => (
-                   <tr key={l.id} className="hover:bg-blue-50/30 transition-all group rounded-2xl">
-                     <td className="p-4 text-slate-400 font-medium whitespace-nowrap">{l.date}</td>
-                     <td className="p-4 font-black text-slate-800">{data.customers.find(c => c.id === l.customerId)?.name || 'Guest'}</td>
-                     <td className="p-4 text-right">
-                       <span className="font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white transition-all">৳{l.totalPrice}</span>
-                     </td>
-                   </tr>
-                 ))}
-               </tbody>
-             </table>
-           </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   );
 };
 
-const CalendarCard = ({ label, date, icon, glow }: { label: string, date: string, icon: string, glow?: boolean }) => {
-  return (
-    <div className={`bg-slate-950 ${glow ? 'text-emerald-300 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'text-emerald-400/80 border-slate-800 shadow-xl'} px-6 py-4 rounded-[2.5rem] border-2 flex flex-col items-center justify-center min-w-[170px] min-h-[85px] transition-all duration-300 hover:scale-105 group relative overflow-hidden`}>
-      <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-emerald-500/10 transition-all"></div>
-      <div className="flex items-center gap-2 mb-2 opacity-60">
-        <i className={`fas ${icon} text-[10px] drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]`}></i>
-        <span className="text-[7px] font-black uppercase tracking-[0.3em]">{label}</span>
-      </div>
-      <p className="text-[12px] font-black tracking-tighter text-center leading-tight drop-shadow-[0_0_8px_rgba(52,211,153,0.4)] whitespace-nowrap">{date}</p>
+const CalendarCard = ({ label, date, icon, glow }: any) => (
+  <div className={`bg-slate-950 ${glow ? 'text-emerald-300 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'text-emerald-400/80 border-slate-800 shadow-xl'} px-6 py-4 rounded-[2.5rem] border-2 flex flex-col items-center justify-center min-w-[170px] min-h-[85px] transition-all hover:scale-105 group relative overflow-hidden`}>
+    <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-emerald-500/10 transition-all"></div>
+    <div className="flex items-center gap-2 mb-2 opacity-60">
+      <i className={`fas ${icon} text-[10px]`}></i>
+      <span className="text-[7px] font-black uppercase tracking-[0.3em]">{label}</span>
     </div>
-  );
-};
+    <p className="text-[12px] font-black tracking-tighter text-center leading-tight whitespace-nowrap">{date}</p>
+  </div>
+);
 
 const KPICard = ({ title, value, icon, color }: any) => {
   const colorMap: any = {
-    blue: 'bg-blue-600 text-blue-700 shadow-blue-100 border-blue-100',
-    orange: 'bg-amber-500 text-amber-600 shadow-amber-100 border-amber-100',
-    emerald: 'bg-emerald-600 text-emerald-700 shadow-emerald-100 border-emerald-100',
-    'emerald-light': 'bg-emerald-400 text-emerald-500 shadow-emerald-50 border-emerald-50',
-    red: 'bg-rose-500 text-rose-600 shadow-rose-100 border-rose-100',
-    indigo: 'bg-indigo-600 text-indigo-700 shadow-indigo-100 border-indigo-100',
+    blue: 'bg-blue-600 text-blue-700 shadow-blue-100',
+    orange: 'bg-amber-500 text-amber-600 shadow-amber-100',
+    emerald: 'bg-emerald-600 text-emerald-700 shadow-emerald-100',
+    'emerald-light': 'bg-emerald-400 text-emerald-500 shadow-emerald-50',
+    red: 'bg-rose-500 text-rose-600 shadow-rose-100',
+    indigo: 'bg-indigo-600 text-indigo-700 shadow-indigo-100',
   };
-  const [bg, text, shadow, border] = colorMap[color].split(' ');
-  
-  // FIXED: Adaptive font size and overflow control for large values
+  const [bg, text] = colorMap[color].split(' ');
   const valLen = value?.toString().length || 0;
-  let valFontSizeClass = 'text-xl sm:text-2xl';
-  if (valLen > 14) valFontSizeClass = 'text-[12px] leading-tight break-all';
-  else if (valLen > 11) valFontSizeClass = 'text-sm sm:text-base break-all';
-  else if (valLen > 8) valFontSizeClass = 'text-base sm:text-lg break-all sm:break-normal';
+  let valFontSizeClass = valLen > 14 ? 'text-[12px]' : valLen > 11 ? 'text-sm' : 'text-base sm:text-lg';
 
   return (
-    <div className="bg-white p-4 sm:p-5 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center gap-3 hover:shadow-2xl transition-all duration-500 group relative overflow-hidden h-full min-h-[100px] min-w-0">
-      <div className={`absolute -top-12 -right-12 w-28 h-28 ${bg} opacity-5 rounded-full blur-2xl transition-all group-hover:scale-150`}></div>
-      <div className={`w-11 h-11 shrink-0 rounded-[1.4rem] flex items-center justify-center text-lg text-white shadow-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-12 z-10 ${bg}`}>
-        <i className={`fas ${icon} tech-icon`}></i>
+    <div className="bg-white p-4 sm:p-5 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center gap-3 hover:shadow-2xl transition-all h-full min-h-[100px] min-w-0">
+      <div className={`w-11 h-11 shrink-0 rounded-[1.4rem] flex items-center justify-center text-lg text-white shadow-2xl ${bg}`}>
+        <i className={`fas ${icon}`}></i>
       </div>
-      <div className="z-10 min-w-0 flex-1 overflow-hidden">
+      <div className="min-w-0 flex-1 overflow-hidden">
         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-0.5 truncate">{title}</p>
-        <p className={`font-black tracking-tighter ${text} drop-shadow-sm transition-all duration-300 ${valFontSizeClass}`}>
+        <p className={`font-black tracking-tighter ${text} ${valFontSizeClass} break-all sm:break-normal transition-all`}>
           {value}
         </p>
       </div>
