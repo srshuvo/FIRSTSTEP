@@ -65,6 +65,7 @@ export interface StockOut {
   paidAmount: number;
   dueAdded: number;
   date: string;
+  isSample?: boolean;
 }
 
 export interface PaymentLog {
@@ -76,6 +77,14 @@ export interface PaymentLog {
   note: string;
 }
 
+export interface LedgerEntry {
+  id: string;
+  date: string;
+  description: string;
+  name: string;
+  amount: number;
+}
+
 export interface AppData {
   categories: Category[];
   products: Product[];
@@ -84,4 +93,5 @@ export interface AppData {
   stockInLogs: StockIn[];
   stockOutLogs: StockOut[];
   paymentLogs: PaymentLog[];
+  ledgerEntries?: LedgerEntry[];
 }

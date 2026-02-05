@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState, useEffect } from 'react';
 import { AppData, Product, StockOut } from '../types';
 
@@ -20,7 +21,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
 
   const getFilteredLogs = (logs: any[]) => {
     const now = new Date();
-    return logs.filter(log => {
+    return (logs || []).filter(log => {
       const logDate = new Date(log.date);
       if (dateFilter === 'today') return log.date === todayStr;
       if (dateFilter === '7days') {
@@ -44,6 +45,12 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
   const calculateProfit = (log: StockOut) => {
     const p = data.products.find(prod => prod.id === log.productId);
     if (!p) return 0;
+
+    if (log.isSample) {
+        const cost = (p.costPrice || 0) * log.quantity;
+        return log.paidAmount - cost;
+    }
+
     const cat = data.categories.find(c => c.id === p.categoryId);
     const isSpareParts = cat?.name.toLowerCase().includes('spare parts') || cat?.name.includes('স্পেয়ার পার্টস');
     if (isSpareParts) return (log.unitPrice * log.quantity) * 0.4;
@@ -54,16 +61,19 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
     const sOut = getFilteredLogs(data.stockOutLogs);
     const sIn = getFilteredLogs(data.stockInLogs);
     const payments = getFilteredLogs(data.paymentLogs);
+    const ledgerEntries = getFilteredLogs(data.ledgerEntries || []);
 
     const totalSales = sOut.reduce((acc, l) => acc + l.totalPrice, 0);
     const totalPurchase = sIn.reduce((acc, l) => acc + l.totalPrice, 0);
-    const totalProfit = sOut.reduce((acc, l) => acc + calculateProfit(l), 0) - payments.reduce((acc, l) => acc + (l.discount || 0), 0);
-    
+    const totalExpenses = ledgerEntries.reduce((acc, l) => acc + (l.amount || 0), 0);
+    const grossProfit = sOut.reduce((acc, l) => acc + calculateProfit(l), 0);
+    const discountsGiven = payments.reduce((acc, l) => acc + (l.discount || 0), 0);
+    const netProfit = grossProfit - discountsGiven - totalExpenses;
     const totalDue = data.customers.reduce((acc, c) => acc + (c.dueAmount > 0 ? c.dueAmount : 0), 0);
     const totalStockValue = data.products.reduce((acc, p) => acc + (p.stock * p.costPrice), 0);
 
     return { 
-      totalSales, totalPurchase, totalProfit, 
+      totalSales, totalPurchase, netProfit, grossProfit,
       totalDue, totalStockValue
     };
   }, [data, dateFilter, customRange]);
@@ -75,21 +85,14 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
     
     const toBn = (n: number | string) => n.toString().split('').map(d => bnDigits[parseInt(d)] || d).join('');
 
-    // Official Bangladesh Revised Bongabdo Logic
     const getBongabdo = () => {
       const year = now.getFullYear();
       const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
-      
-      // Bengali year starts on April 14
       let start = new Date(year, 3, 14);
       if (now < start) start.setFullYear(year - 1);
-      
       const diffInDays = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
       const bYear = (now < new Date(year, 3, 14) ? year - 594 : year - 593);
-      
-      // Revised Calendar (since 2019): First 6 months (31 days), Next 6 months (30 days, Falgun 31 in leap year)
       const monthDays = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, isLeap ? 31 : 30, 30];
-      
       let dayCount = diffInDays + 1;
       let mIdx = 0;
       for (const days of monthDays) {
@@ -97,7 +100,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         dayCount -= days;
         mIdx++;
       }
-      
       return `${toBn(dayCount)}-${bnMonths[mIdx]}-${toBn(bYear)}`;
     };
 
@@ -106,7 +108,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
     };
 
     const getHijri = () => {
-      // Using International API for Hijri fallback
       const hijriOptions: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
       return new Intl.DateTimeFormat('bn-BD-u-ca-islamic-umalqura', hijriOptions).format(now);
     };
@@ -127,8 +128,9 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
   const t = {
     sales: lang === 'bn' ? 'মোট বিক্রি' : "Sales",
     purchase: lang === 'bn' ? 'মোট কেনা' : "Purchase",
-    profit: lang === 'bn' ? 'নীট লাভ' : "Profit",
-    due: lang === 'bn' ? 'মোট পাওনা (বাকি)' : 'Total Due',
+    grossProfit: lang === 'bn' ? 'মোট লাভ' : 'Gross Profit',
+    netProfit: lang === 'bn' ? 'নীট লাভ' : "Net Profit",
+    due: lang === 'bn' ? 'মোট পাওনা' : 'Total Due',
     stockVal: lang === 'bn' ? 'স্টক ভ্যালু' : 'Stock Value',
     stockIntel: lang === 'bn' ? 'স্টক ইনভেন্টরি' : 'Stock Intel',
     filterLabel: lang === 'bn' ? 'ফিল্টার' : 'Filters',
@@ -190,14 +192,22 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
             {lang === 'bn' ? (f === 'today' ? 'আজ' : f === '7days' ? '৭ দিন' : f === 'month' ? '১ মাস' : f === '6months' ? '৬ মাস' : f === '12months' ? '১২ মাস' : 'কাস্টম') : f}
           </button>
         ))}
+        {dateFilter === 'custom' && (
+          <div className="flex items-center gap-2 ml-4">
+            <input type="date" value={customRange.start} onChange={e => setCustomRange({...customRange, start: e.target.value})} className="px-3 py-1 text-xs border rounded-lg outline-none focus:ring-1 focus:ring-emerald-500" />
+            <span className="text-gray-400">-</span>
+            <input type="date" value={customRange.end} onChange={e => setCustomRange({...customRange, end: e.target.value})} className="px-3 py-1 text-xs border rounded-lg outline-none focus:ring-1 focus:ring-emerald-500" />
+          </div>
+        )}
       </div>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-        <KPICard title={t.sales} value={`৳${stats.totalSales}`} icon="fa-wallet" color="blue" />
-        <KPICard title={t.purchase} value={`৳${stats.totalPurchase}`} icon="fa-cart-flatbed" color="orange" />
-        <KPICard title={t.profit} value={`৳${stats.totalProfit.toFixed(0)}`} icon="fa-chart-line" color="emerald" />
-        <KPICard title={t.due} value={`৳${stats.totalDue}`} icon="fa-user-clock" color="red" />
-        <KPICard title={t.stockVal} value={`৳${stats.totalStockValue}`} icon="fa-boxes-stacked" color="indigo" />
+      <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6">
+        <KPICard title={t.sales} value={`৳${stats.totalSales.toLocaleString()}`} icon="fa-wallet" color="blue" />
+        <KPICard title={t.purchase} value={`৳${stats.totalPurchase.toLocaleString()}`} icon="fa-cart-flatbed" color="orange" />
+        <KPICard title={t.stockVal} value={`৳${stats.totalStockValue.toLocaleString()}`} icon="fa-boxes-stacked" color="indigo" />
+        <KPICard title={t.grossProfit} value={`৳${stats.grossProfit.toLocaleString()}`} icon="fa-money-bill-trend-up" color="emerald-light" />
+        <KPICard title={t.netProfit} value={`৳${stats.netProfit.toLocaleString()}`} icon="fa-chart-line" color="emerald" />
+        <KPICard title={t.due} value={`৳${stats.totalDue.toLocaleString()}`} icon="fa-user-clock" color="red" />
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -286,19 +296,25 @@ const KPICard = ({ title, value, icon, color }: any) => {
     blue: 'bg-blue-600 text-blue-700 shadow-blue-100 border-blue-100',
     orange: 'bg-amber-500 text-amber-600 shadow-amber-100 border-amber-100',
     emerald: 'bg-emerald-600 text-emerald-700 shadow-emerald-100 border-emerald-100',
+    'emerald-light': 'bg-emerald-400 text-emerald-500 shadow-emerald-50 border-emerald-50',
     red: 'bg-rose-500 text-rose-600 shadow-rose-100 border-rose-100',
     indigo: 'bg-indigo-600 text-indigo-700 shadow-indigo-100 border-indigo-100',
   };
   const [bg, text, shadow, border] = colorMap[color].split(' ');
+  
+  // Adaptive font size based on value length
+  const valLen = value?.length || 0;
+  const valClass = valLen > 12 ? 'text-sm sm:text-base' : (valLen > 8 ? 'text-base sm:text-lg' : 'text-xl sm:text-2xl');
+
   return (
-    <div className="bg-white p-8 rounded-[3.5rem] shadow-sm border border-slate-100 flex items-center gap-6 hover:shadow-2xl transition-all duration-500 group relative overflow-hidden">
+    <div className="bg-white p-4 sm:p-5 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center gap-3 hover:shadow-2xl transition-all duration-500 group relative overflow-hidden h-full min-h-[100px]">
       <div className={`absolute -top-12 -right-12 w-28 h-28 ${bg} opacity-5 rounded-full blur-2xl transition-all group-hover:scale-150`}></div>
-      <div className={`w-14 h-14 rounded-[1.8rem] flex items-center justify-center text-xl text-white shadow-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-12 z-10 ${bg}`}>
+      <div className={`w-11 h-11 shrink-0 rounded-[1.4rem] flex items-center justify-center text-lg text-white shadow-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-12 z-10 ${bg}`}>
         <i className={`fas ${icon} tech-icon`}></i>
       </div>
-      <div className="z-10">
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1.5">{title}</p>
-        <p className={`text-2xl font-black tracking-tighter ${text} drop-shadow-sm`}>{value}</p>
+      <div className="z-10 min-w-0 flex-1 overflow-hidden">
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-0.5 truncate">{title}</p>
+        <p className={`font-black tracking-tighter ${text} drop-shadow-sm truncate ${valClass}`}>{value}</p>
       </div>
     </div>
   );

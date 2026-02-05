@@ -20,13 +20,14 @@ const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
 
   const filteredProducts = useMemo(() => {
     return data.products
-      .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase().trim()))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [data.products, searchTerm]);
 
-  // Automatic selection logic
+  // Enhanced Automatic selection logic
   useEffect(() => {
-    if (searchTerm.trim() !== '' && filteredProducts.length === 1) {
+    const trimmed = searchTerm.trim();
+    if (trimmed !== '' && filteredProducts.length === 1) {
       const p = filteredProducts[0];
       if (formData.productId !== p.id) {
         setFormData(prev => ({
@@ -36,7 +37,7 @@ const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
         }));
       }
     }
-  }, [filteredProducts, searchTerm, formData.productId]);
+  }, [filteredProducts, searchTerm]);
 
   const t = {
     title: lang === 'bn' ? 'মাল কেনা (Purchase)' : 'Purchase Entry',
@@ -79,13 +80,25 @@ const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
           <div className="space-y-4">
             <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
               <label className="block text-xs font-black uppercase text-gray-400 mb-2">{t.search}</label>
-              <input 
-                type="text" 
-                value={searchTerm} 
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-full border p-3 rounded-xl font-bold bg-white outline-none focus:ring-2 focus:ring-emerald-500"
-                placeholder={t.search}
-              />
+              <div className="relative">
+                <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-300"></i>
+                <input 
+                  type="text" 
+                  value={searchTerm} 
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="w-full border p-3 pl-10 pr-10 rounded-xl font-bold bg-white outline-none focus:ring-2 focus:ring-emerald-500"
+                  placeholder={t.search}
+                />
+                {searchTerm && (
+                  <button 
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-rose-500"
+                  >
+                    <i className="fas fa-circle-xmark"></i>
+                  </button>
+                )}
+              </div>
               
               <div className="mt-4">
                 <label className="block text-xs font-black uppercase text-gray-400 mb-2">{t.product}</label>
@@ -101,6 +114,9 @@ const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
                   <option value="">-- {t.product} --</option>
                   {filteredProducts.map(p => <option key={p.id} value={p.id}>{p.name} ({p.stock} {p.unit})</option>)}
                 </select>
+                {filteredProducts.length === 1 && searchTerm.trim() !== '' && (
+                  <p className="mt-1 text-[10px] text-emerald-600 font-black uppercase tracking-widest italic animate-pulse">Auto-selected: {filteredProducts[0].name}</p>
+                )}
               </div>
             </div>
 

@@ -15,20 +15,23 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
     customerId: '',
     quantity: 0,
     unitPrice: 0,
-    discount: 0, // Added discount state
+    discount: 0,
     paidAmount: 0,
     billNumber: `BILL-${Date.now().toString().slice(-6)}`,
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    isSample: false
   });
 
   const filteredProducts = useMemo(() => {
     return data.products
-      .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase().trim()))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [data.products, searchTerm]);
 
+  // Enhanced Automatic selection logic
   useEffect(() => {
-    if (searchTerm.trim() !== '' && filteredProducts.length === 1) {
+    const trimmed = searchTerm.trim();
+    if (trimmed !== '' && filteredProducts.length === 1) {
       const p = filteredProducts[0];
       if (formData.productId !== p.id) {
         setFormData(prev => ({
@@ -38,7 +41,7 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
         }));
       }
     }
-  }, [filteredProducts, searchTerm, formData.productId]);
+  }, [filteredProducts, searchTerm]);
 
   const t = {
     title: lang === 'bn' ? 'মাল বিক্রি (Sell)' : 'Sales Entry',
@@ -50,7 +53,8 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
     discount: lang === 'bn' ? 'ডিসকাউন্ট (ছাড়)' : 'Discount',
     paid: lang === 'bn' ? 'পরিশোধ (Paid)' : 'Paid Amount',
     total: lang === 'bn' ? 'মোট বিল' : 'Total Bill',
-    save: lang === 'bn' ? 'বিক্রি সম্পন্ন করুন' : 'Complete Sale'
+    save: lang === 'bn' ? 'বিক্রি সম্পন্ন করুন' : 'Complete Sale',
+    sample: lang === 'bn' ? 'এটি কি স্যাম্পল?' : 'Is this a Sample?'
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -69,10 +73,10 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
       productName: prod.name,
       productUnit: prod.unit,
       totalPrice: total,
-      dueAdded: total - formData.paidAmount // Removed Math.max(0, ...) to support advance
+      dueAdded: total - formData.paidAmount
     });
     alert(lang === 'bn' ? "বিক্রি সম্পন্ন!" : "Sale Completed!");
-    setFormData({ ...formData, productId: '', quantity: 0, discount: 0, paidAmount: 0, billNumber: `BILL-${Date.now().toString().slice(-6)}` });
+    setFormData({ ...formData, productId: '', quantity: 0, discount: 0, paidAmount: 0, isSample: false, billNumber: `BILL-${Date.now().toString().slice(-6)}` });
     setSearchTerm('');
   };
 
@@ -89,13 +93,25 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
           <div className="space-y-4">
             <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
               <label className="block text-xs font-black uppercase text-gray-400 mb-2">{t.search}</label>
-              <input 
-                type="text" 
-                value={searchTerm} 
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-full border p-3 rounded-xl font-bold bg-white outline-none focus:ring-2 focus:ring-emerald-500"
-                placeholder={t.search}
-              />
+              <div className="relative">
+                <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-300"></i>
+                <input 
+                  type="text" 
+                  value={searchTerm} 
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="w-full border p-3 pl-10 pr-10 rounded-xl font-bold bg-white outline-none focus:ring-2 focus:ring-emerald-500"
+                  placeholder={t.search}
+                />
+                {searchTerm && (
+                  <button 
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-rose-500"
+                  >
+                    <i className="fas fa-circle-xmark"></i>
+                  </button>
+                )}
+              </div>
               
               <div className="mt-4">
                 <label className="block text-xs font-black uppercase text-gray-400 mb-2">{t.product}</label>
@@ -111,6 +127,9 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
                   <option value="">-- {t.product} --</option>
                   {filteredProducts.map(p => <option key={p.id} value={p.id}>{p.name} ({p.stock} {p.unit})</option>)}
                 </select>
+                {filteredProducts.length === 1 && searchTerm.trim() !== '' && (
+                  <p className="mt-1 text-[10px] text-emerald-600 font-black uppercase tracking-widest italic animate-pulse">Auto-selected: {filteredProducts[0].name}</p>
+                )}
               </div>
             </div>
 
@@ -148,6 +167,19 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
                 <label className="block text-xs font-black uppercase text-gray-400 mb-1 ml-1">{t.paid}</label>
                 <input type="number" placeholder={t.paid} value={formData.paidAmount || ''} onChange={e => setFormData({...formData, paidAmount: Number(e.target.value)})} className="w-full border p-3 rounded-xl font-bold bg-white outline-none focus:ring-2 focus:ring-emerald-500" />
               </div>
+            </div>
+
+            <div className="flex items-center gap-3 bg-rose-50 p-4 rounded-xl border border-rose-100">
+               <input 
+                 type="checkbox" 
+                 id="isSample" 
+                 checked={formData.isSample} 
+                 onChange={e => setFormData({...formData, isSample: e.target.checked})}
+                 className="w-5 h-5 accent-rose-600 rounded cursor-pointer"
+               />
+               <label htmlFor="isSample" className="text-sm font-black text-rose-700 cursor-pointer select-none">
+                 {t.sample} <span className="text-[10px] font-bold opacity-60 ml-2">(পুরো খরচ লাভের খাতা থেকে কাটা হবে)</span>
+               </label>
             </div>
           </div>
 

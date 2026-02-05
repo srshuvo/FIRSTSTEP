@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { User, UserRole, AppData, Product, Customer, Supplier, StockIn, StockOut, PaymentLog, Category } from './types';
+import { User, UserRole, AppData, Product, Customer, Supplier, StockIn, StockOut, PaymentLog, Category, LedgerEntry } from './types';
 import { INITIAL_DATA } from './constants';
 import Dashboard from './components/Dashboard';
 import Inventory from './components/Inventory';
@@ -13,6 +13,7 @@ import Navbar from './components/Navbar';
 import Login from './components/Login';
 import LanguageSwitcher from './components/LanguageSwitcher';
 import ChatBot from './components/ChatBot';
+import SSS from './components/SSS';
 
 const SUPABASE_URL = 'https://qwopfalqhkkjkxqpbloa.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3b3BmYWxxaGtramt4cXBibG9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5OTQxMDIsImV4cCI6MjA4NDU3MDEwMn0.QyCarDEwYaH6dxEhhTgf5hiZab1ylv6P_06uXtYR_s0';
@@ -26,19 +27,18 @@ const App: React.FC = () => {
   const [data, setData] = useState<AppData>(INITIAL_DATA);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'inventory' | 'transactions' | 'reports' | 'customers' | 'suppliers'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'inventory' | 'transactions' | 'reports' | 'customers' | 'suppliers' | 'sss'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const [lastDeleted, setLastDeleted] = useState<{ type: string, item: any, label: string } | null>(null);
   const undoTimeoutRef = useRef<any>(null);
 
-  // Undo notification auto-hide logic (10 seconds)
   useEffect(() => {
     if (lastDeleted) {
       if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
       undoTimeoutRef.current = setTimeout(() => {
         setLastDeleted(null);
-      }, 10000); // 10 seconds
+      }, 10000);
     }
     return () => {
       if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
@@ -84,6 +84,7 @@ const App: React.FC = () => {
         const cloudData = cloudRow.data;
         if (!cloudData.paymentLogs) cloudData.paymentLogs = [];
         if (!cloudData.categories) cloudData.categories = [];
+        if (!cloudData.ledgerEntries) cloudData.ledgerEntries = [];
         setData(cloudData);
       } else {
         await syncToCloud(INITIAL_DATA);
@@ -129,27 +130,24 @@ const App: React.FC = () => {
     const { type, item } = lastDeleted;
     setData(prev => {
       let newData = { ...prev };
-      if (type === 'product') {
-        newData.products = [item, ...prev.products];
-      } else if (type === 'customer') {
-        newData.customers = [item, ...prev.customers];
-      } else if (type === 'supplier') {
-        newData.suppliers = [item, ...prev.suppliers];
-      } else if (type === 'stockIn') {
+      if (type === 'product') newData.products = [item, ...prev.products];
+      else if (type === 'customer') newData.customers = [item, ...prev.customers];
+      else if (type === 'supplier') newData.suppliers = [item, ...prev.suppliers];
+      else if (type === 'stockIn') {
         newData.stockInLogs = [item, ...prev.stockInLogs];
         newData.products = prev.products.map(p => p.id === item.productId ? { ...p, stock: p.stock + item.quantity } : p);
       } else if (type === 'stockOut') {
         newData.stockOutLogs = [item, ...prev.stockOutLogs];
-        newData.products = prev.products.map(p => p.id === item.productId ? { ...p, stock: p.stock - item.quantity } : p);
+        newData.products = prev.products.map(p => p.id === item.productId ? { ...p, stock: p.stock + item.quantity } : p);
         newData.customers = prev.customers.map(c => c.id === item.customerId ? { ...c, dueAmount: c.dueAmount + item.dueAdded } : c);
       } else if (type === 'payment') {
         newData.paymentLogs = [item, ...prev.paymentLogs];
         newData.customers = prev.customers.map(c => c.id === item.customerId ? { ...c, dueAmount: c.dueAmount - (item.amount + (item.discount || 0)) } : c);
       } else if (type === 'category') {
         newData.categories = [...(prev.categories || []), item.category];
-        newData.products = prev.products.map(p => 
-          item.affectedProductIds.includes(p.id) ? { ...p, categoryId: item.category.id } : p
-        );
+        newData.products = prev.products.map(p => item.affectedProductIds.includes(p.id) ? { ...p, categoryId: item.category.id } : p);
+      } else if (type === 'ledger') {
+        newData.ledgerEntries = [item, ...(prev.ledgerEntries || [])];
       }
       return newData;
     });
@@ -242,9 +240,7 @@ const App: React.FC = () => {
           const currentTotalValue = p.stock * p.costPrice;
           const incomingValue = updatedLog.quantity * updatedLog.unitPrice;
           const newTotalStock = p.stock + updatedLog.quantity;
-          const avgPrice = newTotalStock > 0 
-            ? Number(((currentTotalValue + incomingValue) / newTotalStock).toFixed(2)) 
-            : updatedLog.unitPrice;
+          const avgPrice = newTotalStock > 0 ? Number(((currentTotalValue + incomingValue) / newTotalStock).toFixed(2)) : updatedLog.unitPrice;
           return { ...p, stock: newTotalStock, costPrice: avgPrice };
         }
         return p;
@@ -284,6 +280,22 @@ const App: React.FC = () => {
     });
   };
 
+  const deleteLedgerEntry = (id: string) => {
+    setData(prev => {
+      const item = (prev.ledgerEntries || []).find(e => e.id === id);
+      if (item) setLastDeleted({ type: 'ledger', item, label: item.description });
+      return { ...prev, ledgerEntries: (prev.ledgerEntries || []).filter(e => e.id !== id) };
+    });
+  };
+
+  const updateLedgerEntry = (entry: LedgerEntry) => {
+    setData(prev => ({ ...prev, ledgerEntries: (prev.ledgerEntries || []).map(e => e.id === entry.id ? entry : e) }));
+  };
+
+  const addLedgerEntry = (entry: LedgerEntry) => {
+    setData(prev => ({ ...prev, ledgerEntries: [entry, ...(prev.ledgerEntries || [])] }));
+  };
+
   const addCategory = (cat: Category) => setData(prev => ({ ...prev, categories: [...(prev.categories || []), cat] }));
   const updateCategory = (cat: Category) => setData(prev => ({ ...prev, categories: (prev.categories || []).map(c => c.id === cat.id ? cat : c) }));
   
@@ -303,10 +315,7 @@ const App: React.FC = () => {
   };
 
   const bulkUpdateProductCategory = (catId: string | undefined, productIds: string[]) => {
-    setData(prev => ({
-      ...prev,
-      products: prev.products.map(p => productIds.includes(p.id) ? { ...p, categoryId: catId } : p)
-    }));
+    setData(prev => ({ ...prev, products: prev.products.map(p => productIds.includes(p.id) ? { ...p, categoryId: catId } : p) }));
   };
 
   if (loading) {
@@ -333,120 +342,39 @@ const App: React.FC = () => {
         <h1 className="font-bold text-lg">FIRST STEP</h1>
         <div className="flex items-center gap-3">
            {syncing ? <i className="fas fa-sync fa-spin text-xs text-emerald-400"></i> : <i className="fas fa-cloud text-xs text-emerald-400"></i>}
-           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2">
-            <i className={`fas ${isSidebarOpen ? 'fa-times' : 'fa-bars'} text-xl`}></i>
-          </button>
+           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2"><i className={`fas ${isSidebarOpen ? 'fa-times' : 'fa-bars'} text-xl`}></i></button>
         </div>
       </div>
 
-      <Navbar 
-        currentPage={currentPage} 
-        setCurrentPage={(p) => { setCurrentPage(p); setIsSidebarOpen(false); }} 
-        onLogout={async () => { await supabase.auth.signOut(); setUser(null); }} 
-        user={user} 
-        lang={lang} 
-        setLang={setLang} 
-        isOpen={isSidebarOpen}
-      />
+      <Navbar currentPage={currentPage} setCurrentPage={(p) => { setCurrentPage(p); setIsSidebarOpen(false); }} onLogout={async () => { await supabase.auth.signOut(); setUser(null); }} user={user} lang={lang} setLang={setLang} isOpen={isSidebarOpen} />
       
       <main className="flex-1 p-4 md:p-8">
         <div className="bg-white rounded-2xl shadow-sm min-h-[70vh] p-1 md:p-4 border border-gray-100 relative">
           {currentPage === 'dashboard' && <Dashboard data={data} lang={lang} />}
-          {currentPage === 'inventory' && (
-            <Inventory 
-              data={data} 
-              onAdd={(p) => setData(prev => ({ ...prev, products: [...prev.products, p] }))} 
-              onUpdate={(p) => setData(prev => ({...prev, products: prev.products.map(pr => pr.id === p.id ? p : pr)}))} 
-              onDelete={deleteProduct} 
-              onAddCategory={addCategory}
-              onUpdateCategory={updateCategory}
-              onDeleteCategory={deleteCategory}
-              onBulkCategoryUpdate={bulkUpdateProductCategory}
-              lang={lang} 
-            />
-          )}
-          {currentPage === 'transactions' && (
-            <Transactions 
-              data={data} 
-              onRecordPurchase={(entry) => setData(prev => {
+          {currentPage === 'inventory' && <Inventory data={data} onAdd={(p) => setData(prev => ({ ...prev, products: [...prev.products, p] }))} onUpdate={(p) => setData(prev => ({...prev, products: prev.products.map(pr => pr.id === p.id ? p : pr)}))} onDelete={deleteProduct} onAddCategory={addCategory} onUpdateCategory={updateCategory} onDeleteCategory={deleteCategory} onBulkCategoryUpdate={bulkUpdateProductCategory} lang={lang} />}
+          {currentPage === 'transactions' && <Transactions data={data} onRecordPurchase={(entry) => setData(prev => {
                 const product = prev.products.find(p => p.id === entry.productId);
                 if (!product) return prev;
                 const currentTotalValue = product.stock * product.costPrice;
                 const incomingValue = entry.quantity * entry.unitPrice;
                 const newTotalStock = product.stock + entry.quantity;
-                const avgPrice = newTotalStock > 0 
-                  ? Number(((currentTotalValue + incomingValue) / newTotalStock).toFixed(2)) 
-                  : entry.unitPrice;
-                return {
-                  ...prev, 
-                  products: prev.products.map(p => p.id === entry.productId 
-                    ? { ...p, stock: newTotalStock, costPrice: avgPrice } 
-                    : p
-                  ),
-                  stockInLogs: [entry, ...prev.stockInLogs]
-                };
-              })} 
-              onRecordSale={(entry) => setData(prev => ({
-                ...prev,
-                products: prev.products.map(p => p.id === entry.productId ? { ...p, stock: p.stock - entry.quantity } : p),
-                customers: prev.customers.map(c => c.id === entry.customerId ? { ...c, dueAmount: c.dueAmount + entry.dueAdded } : c),
-                stockOutLogs: [entry, ...prev.stockOutLogs]
-              }))}
-              lang={lang} 
-            />
-          )}
-          {currentPage === 'reports' && (
-            <Reports 
-              data={data} 
-              onDeleteStockIn={deleteStockIn} 
-              onDeleteStockOut={deleteStockOut} 
-              onUpdateStockIn={updateStockIn}
-              onUpdateStockOut={updateStockOut}
-              lang={lang} 
-            />
-          )}
-          {currentPage === 'customers' && (
-            <Customers 
-              data={data} 
-              onAdd={(c) => setData(prev => ({...prev, customers: [...prev.customers, c]}))} 
-              onUpdate={(c) => setData(prev => ({...prev, customers: prev.customers.map(cu => cu.id === c.id ? c : cu)}))} 
-              onDelete={deleteCustomer} 
-              onPay={handlePaymentRecord}
-              onDeleteLog={deleteStockOut}
-              onUpdateLog={updateStockOut}
-              onDeletePayment={deletePaymentLog}
-              onUpdatePayment={updatePaymentLog}
-              lang={lang} 
-            />
-          )}
-          {currentPage === 'suppliers' && (
-            <Suppliers 
-              data={data} 
-              onAdd={(s) => setData(prev => ({...prev, suppliers: [...prev.suppliers, s]}))} 
-              onUpdate={(s) => setData(prev => ({...prev, suppliers: prev.suppliers.map(su => su.id === s.id ? s : su)}))} 
-              onDelete={deleteSupplier} 
-              onDeleteLog={deleteStockIn}
-              onUpdateLog={updateStockIn}
-              lang={lang} 
-            />
-          )}
+                const avgPrice = newTotalStock > 0 ? Number(((currentTotalValue + incomingValue) / newTotalStock).toFixed(2)) : entry.unitPrice;
+                return { ...prev, products: prev.products.map(p => p.id === entry.productId ? { ...p, stock: newTotalStock, costPrice: avgPrice } : p), stockInLogs: [entry, ...prev.stockInLogs] };
+              })} onRecordSale={(entry) => setData(prev => ({ ...prev, products: prev.products.map(p => p.id === entry.productId ? { ...p, stock: p.stock - entry.quantity } : p), customers: prev.customers.map(c => c.id === entry.customerId ? { ...c, dueAmount: c.dueAmount + entry.dueAdded } : c), stockOutLogs: [entry, ...prev.stockOutLogs] }))} lang={lang} />}
+          {currentPage === 'reports' && <Reports data={data} onDeleteStockIn={deleteStockIn} onDeleteStockOut={deleteStockOut} onUpdateStockIn={updateStockIn} onUpdateStockOut={updateStockOut} lang={lang} />}
+          {currentPage === 'customers' && <Customers data={data} onAdd={(c) => setData(prev => ({...prev, customers: [...prev.customers, c]}))} onUpdate={(c) => setData(prev => ({...prev, customers: prev.customers.map(cu => cu.id === c.id ? c : cu)}))} onDelete={deleteCustomer} onPay={handlePaymentRecord} onDeleteLog={deleteStockOut} onUpdateLog={updateStockOut} onDeletePayment={deletePaymentLog} onUpdatePayment={updatePaymentLog} lang={lang} />}
+          {currentPage === 'suppliers' && <Suppliers data={data} onAdd={(s) => setData(prev => ({...prev, suppliers: [...prev.suppliers, s]}))} onUpdate={(s) => setData(prev => ({...prev, suppliers: prev.suppliers.map(su => su.id === s.id ? s : su)}))} onDelete={deleteSupplier} onDeleteLog={deleteStockIn} onUpdateLog={updateStockIn} lang={lang} />}
+          {currentPage === 'sss' && <SSS data={data} onAdd={addLedgerEntry} onUpdate={updateLedgerEntry} onDelete={deleteLedgerEntry} lang={lang} />}
         </div>
       </main>
 
       {lastDeleted && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 z-[100] animate-bounce max-w-[90vw] md:max-w-md border border-gray-700">
           <div className="flex flex-col">
-            <span className="text-[10px] font-black uppercase text-emerald-400 mb-0.5">
-              {lang === 'bn' ? 'মুছে ফেলা হয়েছে' : 'Deleted'}
-            </span>
+            <span className="text-[10px] font-black uppercase text-emerald-400 mb-0.5">{lang === 'bn' ? 'মুছে ফেলা হয়েছে' : 'Deleted'}</span>
             <span className="font-bold text-sm truncate">{lastDeleted.label}</span>
           </div>
-          <button 
-            onClick={handleUndo}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black uppercase transition shrink-0 shadow-lg"
-          >
-            {lang === 'bn' ? 'ফেরান (Undo)' : 'Undo'}
-          </button>
+          <button onClick={handleUndo} className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black uppercase transition shrink-0 shadow-lg">{lang === 'bn' ? 'ফেরান (Undo)' : 'Undo'}</button>
         </div>
       )}
 

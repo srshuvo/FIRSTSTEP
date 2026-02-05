@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { User } from '../types';
 
@@ -16,8 +17,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, onLogout, 
     { id: 'dashboard', label: lang === 'bn' ? 'ড্যাশবোর্ড' : 'Dashboard', icon: 'fa-briefcase' },
     { id: 'inventory', label: lang === 'bn' ? 'স্টক খাতা' : 'Inventory', icon: 'fa-boxes-packing' },
     { id: 'transactions', label: lang === 'bn' ? 'ক্রয় / বিক্রয়' : 'Transactions', icon: 'fa-money-bill-transfer' },
-    { id: 'customers', label: lang === 'bn' ? 'ক্রেতা মড্যুল' : 'Customers', icon: 'fa-address-book' },
+    { id: 'customers', label: lang === 'bn' ? 'ক্রেতা' : 'Customers', icon: 'fa-address-book' },
     { id: 'suppliers', label: lang === 'bn' ? 'সাপ্লায়ার' : 'Suppliers', icon: 'fa-truck-ramp-box' },
+    { id: 'sss', label: lang === 'bn' ? 'অনন্যা ব্যায়' : 'Ananya Expense', icon: 'fa-file-signature' },
     { id: 'reports', label: lang === 'bn' ? 'রিপোর্ট বক্স' : 'Reports', icon: 'fa-file-invoice' },
   ];
 
@@ -73,7 +75,6 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, onLogout, 
             <i className="fas fa-power-off"></i> {lang === 'bn' ? 'লগ আউট' : 'Disconnect'}
           </button>
           
-          {/* Enhanced Neon Credit Card */}
           <div className="pt-2 px-1">
              <a 
                href="https://www.facebook.com/shuvo.moni.16623" 

@@ -19,4 +19,5 @@ export const INITIAL_DATA: AppData = {
   stockInLogs: [],
   stockOutLogs: [],
   paymentLogs: [],
+  ledgerEntries: [],
 };
