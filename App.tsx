@@ -212,7 +212,19 @@ const App: React.FC = () => {
     setData(prev => ({
       ...prev,
       stockInLogs: [log, ...prev.stockInLogs],
-      products: prev.products.map(p => p.id === log.productId ? { ...p, stock: p.stock + log.quantity } : p)
+      products: prev.products.map(p => {
+        if (p.id === log.productId) {
+          // Weighted average price calculation + Rounding UP
+          const currentTotalValue = (p.stock * p.costPrice);
+          const newEntryValue = (log.quantity * log.unitPrice);
+          const newTotalStock = p.stock + log.quantity;
+          const averagePrice = (currentTotalValue + newEntryValue) / newTotalStock;
+          const roundedPrice = Math.ceil(averagePrice);
+          
+          return { ...p, stock: newTotalStock, costPrice: roundedPrice };
+        }
+        return p;
+      })
     }));
   };
   const deleteStockIn = (id: string) => {

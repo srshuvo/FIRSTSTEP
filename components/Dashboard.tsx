@@ -319,13 +319,13 @@ const KPICard = ({ title, value, icon, color }: any) => {
   let valFontSizeClass = valLen > 14 ? 'text-[12px]' : valLen > 11 ? 'text-sm' : 'text-base sm:text-lg';
 
   return (
-    <div className="bg-white p-4 sm:p-5 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center gap-3 hover:shadow-2xl transition-all h-full min-h-[100px] min-w-0">
-      <div className={`w-11 h-11 shrink-0 rounded-[1.4rem] flex items-center justify-center text-lg text-white shadow-2xl ${bg}`}>
+    <div className="bg-white p-3 sm:p-5 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center gap-2 sm:gap-3 hover:shadow-2xl transition-all h-full min-h-[100px] min-w-0">
+      <div className={`w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-[1.2rem] sm:rounded-[1.4rem] flex items-center justify-center text-base sm:text-lg text-white shadow-2xl ${bg}`}>
         <i className={`fas ${icon}`}></i>
       </div>
       <div className="min-w-0 flex-1 overflow-hidden">
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-0.5 truncate">{title}</p>
-        <p className={`font-black tracking-tighter ${text} ${valFontSizeClass} break-all sm:break-normal transition-all`}>
+        <p className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-0.5 truncate">{title}</p>
+        <p className={`font-black tracking-tighter ${text} ${valFontSizeClass} break-all transition-all leading-tight`}>
           {value}
         </p>
       </div>
