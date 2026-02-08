@@ -229,18 +229,19 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
                 </tr>
               ))}
             </tbody>
-            {/* The table footer is now carefully structured to avoid clipping in print */}
-            <tfoot className="border-t-2 border-black bg-gray-50 font-black print-grand-total">
-                <tr className="bg-gray-50">
-                    <td className="px-4 sm:px-6 py-5 text-sm font-black uppercase text-gray-800">
+            {/* Table Footer: Clearly shows the grand totals for Multi-page support */}
+            <tfoot className="border-t-4 border-black bg-gray-100 font-black">
+                <tr className="bg-gray-100">
+                    <td className="px-4 sm:px-6 py-6 text-sm font-black uppercase text-gray-800">
                         {lang === 'bn' ? 'সর্বমোট হিসাব' : 'Grand Totals'}
                     </td>
-                    <td className="px-4 sm:px-6 py-5 text-sm text-gray-900 font-black">
-                        {lang === 'bn' ? 'মোট মাল: ' : 'Total Stock: '} <span className="text-emerald-700">{currentStockStats.totalStock}</span>
+                    <td className="px-4 sm:px-6 py-6 text-sm text-gray-900 font-black">
+                        {lang === 'bn' ? 'মোট মাল: ' : 'Total Stock: '} <span className="text-blue-700">{currentStockStats.totalStock}</span>
                     </td>
-                    <td className="px-4 sm:px-6 py-5"></td>
-                    <td colSpan={2} className="px-4 sm:px-6 py-5 text-sm text-emerald-900 font-black text-right">
-                        {lang === 'bn' ? 'মোট ভ্যালু: ' : 'Total Value: '} <span className="text-lg">৳{currentStockStats.totalVal.toLocaleString()}</span>
+                    <td className="px-4 sm:px-6 py-6"></td>
+                    <td colSpan={2} className="px-4 sm:px-6 py-6 text-right">
+                        <span className="text-sm font-black uppercase text-gray-600 mr-2">{lang === 'bn' ? 'মোট ভ্যালু: ' : 'Total Value: '}</span>
+                        <span className="text-xl font-black text-emerald-800">৳{currentStockStats.totalVal.toLocaleString()}</span>
                     </td>
                     <td className="no-print"></td>
                 </tr>

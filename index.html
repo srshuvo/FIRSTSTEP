@@ -40,22 +40,24 @@
       @media print {
         @page { 
           size: auto; 
-          margin: 10mm 5mm 15mm 5mm; 
+          margin: 15mm 10mm 20mm 10mm; 
         }
         html, body { 
           height: auto !important; 
           overflow: visible !important; 
           background: white !important; 
-          font-size: 10px; 
+          font-size: 11px; 
           margin: 0; 
-          padding: 0; 
+          padding: 0;
         }
         #root, main { 
           display: block !important; 
           position: static !important; 
           overflow: visible !important; 
           height: auto !important; 
-          width: 100% !important; 
+          width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
         }
         .no-print, .no-print *, button, input, select, .search-container, .user-profile-logo, header.sticky, nav { 
           display: none !important; 
@@ -79,18 +81,19 @@
           width: 100% !important; 
           border-collapse: collapse !important; 
           table-layout: auto; 
-          page-break-after: auto; 
-          margin-bottom: 30px !important; 
+          page-break-after: auto;
+          margin-bottom: 40px !important;
         }
         thead { display: table-header-group !important; }
-        /* tfoot should only appear at the end */
+        /* Force tfoot to only show at the end and not get clipped */
         tfoot { 
           display: table-row-group !important; 
-          border-top: 2px solid #000 !important;
+          border-top: 3px solid #000 !important;
+          page-break-inside: avoid !important;
         } 
         th, td { 
           border: 1px solid #000 !important; 
-          padding: 8px 10px !important; 
+          padding: 10px 12px !important; 
           text-align: left; 
           word-break: break-word; 
           line-height: 1.4; 
@@ -98,7 +101,7 @@
           color: #000 !important; 
         }
         th { 
-          background-color: #f5f5f5 !important; 
+          background-color: #f0f0f0 !important; 
           font-weight: bold; 
           font-size: 11px; 
           -webkit-print-color-adjust: exact; 
@@ -107,15 +110,8 @@
           page-break-inside: avoid !important; 
           page-break-after: auto; 
         }
-        .rounded-2xl, .rounded-3xl, .rounded-[2.5rem], .rounded-[3rem], .rounded-[3.5rem], .rounded-xl { border-radius: 0 !important; }
-        .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl { box-shadow: none !important; }
-        
-        /* Ensure specific totals are large enough and visible */
-        .print-grand-total {
-          background-color: #f9fafb !important;
-          -webkit-print-color-adjust: exact;
-          font-weight: 900 !important;
-        }
+        .rounded-2xl, .rounded-3xl, .rounded-xl { border-radius: 0 !important; }
+        .shadow-sm, .shadow-md, .shadow-lg { box-shadow: none !important; }
       }
 
       .overflow-x-auto { -webkit-overflow-scrolling: touch; }

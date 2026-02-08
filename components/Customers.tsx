@@ -114,9 +114,9 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-area">
         <div className="hidden print:block p-8 text-center border-b-2 border-emerald-500 bg-emerald-50/10">
-           <h2 className="text-2xl font-black text-emerald-900 tracking-tighter uppercase">FIRST STEP - {t.title}</h2>
-           <p className="text-[10px] font-bold text-gray-500 mt-1">{new Date().toLocaleDateString()}</p>
-           <div className="w-16 h-1 bg-emerald-500 mx-auto mt-2 rounded-full"></div>
+           <h2 className="text-3xl font-black text-emerald-900 tracking-tighter uppercase">FIRST STEP - {t.title}</h2>
+           <p className="text-[10px] font-bold text-gray-500 mt-2">{new Date().toLocaleDateString()}</p>
+           <div className="w-20 h-1 bg-emerald-500 mx-auto mt-2 rounded-full"></div>
         </div>
 
         <div className="overflow-x-auto">
@@ -132,15 +132,15 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
             <tbody className="divide-y divide-gray-100">
               {filtered.map(c => (
                 <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-3 font-black text-gray-800">{c.name}</td>
-                  <td className="px-6 py-3 text-gray-500 font-bold">{c.phone}</td>
-                  <td className="px-6 py-3 text-right">
+                  <td className="px-6 py-4 font-black text-gray-800 text-sm">{c.name}</td>
+                  <td className="px-6 py-4 text-gray-500 font-bold">{c.phone}</td>
+                  <td className="px-6 py-4 text-right">
                     <div className="flex flex-col items-end">
-                      <span className={`text-xs font-black ${c.dueAmount > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>৳{Math.abs(c.dueAmount).toLocaleString()}</span>
-                      <span className="text-[8px] font-black uppercase text-gray-400">{c.dueAmount > 0 ? t.dueLabel : t.advanceLabel}</span>
+                      <span className={`text-sm font-black ${c.dueAmount > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>৳{Math.abs(c.dueAmount).toLocaleString()}</span>
+                      <span className="text-[9px] font-black uppercase text-gray-400 tracking-tighter">{c.dueAmount > 0 ? t.dueLabel : t.advanceLabel}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-3 text-center no-print">
+                  <td className="px-6 py-4 text-center no-print">
                     <div className="flex justify-center gap-1">
                       <button onClick={() => { setEditingCustomer(c); setShowModal(true); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><i className="fas fa-edit"></i></button>
                       <button onClick={() => { if(confirm(lang === 'bn' ? 'মুছে ফেলতে চান?' : 'Delete?')) onDelete(c.id) }} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg"><i className="fas fa-trash-can"></i></button>
@@ -149,25 +149,25 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                 </tr>
               ))}
             </tbody>
-            {/* Standard table footer for print visibility */}
-            <tfoot className="border-t-2 border-black bg-gray-50 font-black print-grand-total">
+            {/* Redesigned Footer for the Customer Print List */}
+            <tfoot className="border-t-4 border-black bg-gray-100 font-black">
                 <tr>
-                    <td colSpan={2} className="px-6 py-6 text-sm font-black uppercase text-gray-800">
-                        {lang === 'bn' ? 'সর্বমোট হিসাব' : 'Grand Total Calculations'}
+                    <td colSpan={2} className="px-6 py-8 text-sm font-black uppercase text-gray-700">
+                        {lang === 'bn' ? 'সর্বমোট হিসাব' : 'Grand Totals Summary'}
                     </td>
-                    <td className="px-6 py-6 text-right">
-                        <div className="flex flex-col items-end space-y-2">
-                           <div className="flex gap-6 items-center">
-                               <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider">
-                                  {lang === 'bn' ? 'মোট পাওনা (বাকি):' : 'Total Receivable:'}
+                    <td className="px-6 py-8 text-right">
+                        <div className="flex flex-col items-end space-y-3">
+                           <div className="flex gap-8 items-center bg-white px-4 py-2 rounded-lg border border-gray-200">
+                               <span className="text-[10px] font-black uppercase text-gray-500 tracking-widest">
+                                  {t.totalDue}:
                                </span>
-                               <span className="text-lg font-black text-rose-600">৳{stats.totalDue.toLocaleString()}</span>
+                               <span className="text-lg font-black text-rose-600 leading-none">৳{stats.totalDue.toLocaleString()}</span>
                            </div>
-                           <div className="flex gap-6 items-center">
-                               <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider">
-                                  {lang === 'bn' ? 'মোট অগ্রিম (জমা):' : 'Total Advance:'}
+                           <div className="flex gap-8 items-center bg-white px-4 py-2 rounded-lg border border-gray-200">
+                               <span className="text-[10px] font-black uppercase text-gray-500 tracking-widest">
+                                  {t.totalAdvance}:
                                </span>
-                               <span className="text-lg font-black text-emerald-700">৳{stats.totalAdvance.toLocaleString()}</span>
+                               <span className="text-lg font-black text-emerald-700 leading-none">৳{stats.totalAdvance.toLocaleString()}</span>
                            </div>
                         </div>
                     </td>
@@ -180,7 +180,7 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
 
       {showModal && (
         <div className="fixed inset-0 bg-emerald-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
-          <form ref={formRef} onSubmit={handleSubmit} className="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-md space-y-6">
+          <form ref={formRef} onSubmit={handleSubmit} className="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-md space-y-6 animate-scale-in">
              <h3 className="text-xl font-black text-emerald-900">{editingCustomer ? t.editTitle : t.addTitle}</h3>
              <div className="space-y-4">
                 <input required name="name" defaultValue={editingCustomer?.name || ''} placeholder={t.name} className="w-full p-4 bg-gray-50 border rounded-2xl font-bold" />
