@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AppData, Customer, PaymentLog, StockOut } from '../types';
 
@@ -46,7 +47,6 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
     const isSelect = target.tagName === 'SELECT';
     const isButton = target.tagName === 'BUTTON';
 
-    // Find all focusable elements within the provided container
     const elements = Array.from(containerRef.current?.querySelectorAll('input, select, button') || [])
       .filter(el => {
         const element = el as HTMLElement;
@@ -68,20 +68,6 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
       if (isSelect) return;
       e.preventDefault();
       if (index > 0) elements[index - 1].focus();
-    } else if (e.key === 'ArrowRight') {
-      const input = target as HTMLInputElement;
-      const isAtEnd = !isInput || (input.selectionStart === input.value.length);
-      if (isAtEnd && index < elements.length - 1) {
-        e.preventDefault();
-        elements[index + 1].focus();
-      }
-    } else if (e.key === 'ArrowLeft') {
-      const input = target as HTMLInputElement;
-      const isAtStart = !isInput || (input.selectionStart === 0);
-      if (isAtStart && index > 0) {
-        e.preventDefault();
-        elements[index - 1].focus();
-      }
     }
   };
   
@@ -171,7 +157,7 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 no-print">
-        <div className="relative w-full md:w-96">
+        <div className="relative w-full md:w-96 search-container">
           <i className="fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
           <input 
             ref={searchInputRef}
@@ -182,26 +168,26 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
             onChange={e => setSearchTerm(e.target.value)} 
           />
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex gap-2 w-full md:w-auto no-print">
           <button onClick={() => window.print()} className="flex-1 bg-emerald-50 text-emerald-600 px-5 py-3 rounded-2xl font-black flex items-center justify-center gap-2 border border-emerald-100 hover:bg-emerald-600 hover:text-white transition shadow-sm"><i className="fas fa-file-export"></i> {t.printBtn}</button>
           <button onClick={() => { setEditingCustomer(null); setFormData({ name: '', phone: '', dueAmount: 0 }); setShowModal(true); }} className="flex-1 bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black flex items-center justify-center gap-2 shadow-xl shadow-emerald-900/10 hover:bg-emerald-700 transition uppercase text-xs tracking-widest active:scale-95"><i className="fas fa-user-plus"></i> {t.newBtn}</button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex justify-between items-center group hover:border-red-200 transition-all">
+          <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex justify-between items-center group hover:border-red-200 transition-all">
               <div>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{t.totalDue}</p>
-                  <p className="text-2xl font-black text-rose-600">৳{stats.totalDue}</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{t.totalDue}</p>
+                  <p className="text-xl font-black text-rose-600">৳{stats.totalDue.toLocaleString()}</p>
               </div>
-              <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition-transform"><i className="fas fa-hand-holding-dollar"></i></div>
+              <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center text-lg shadow-inner group-hover:scale-110 transition-transform"><i className="fas fa-hand-holding-dollar"></i></div>
           </div>
-          <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex justify-between items-center group hover:border-emerald-200 transition-all">
+          <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex justify-between items-center group hover:border-emerald-200 transition-all">
               <div>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{t.totalAdvance}</p>
-                  <p className="text-2xl font-black text-emerald-600">৳{stats.totalAdvance}</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{t.totalAdvance}</p>
+                  <p className="text-xl font-black text-emerald-600">৳{stats.totalAdvance.toLocaleString()}</p>
               </div>
-              <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition-transform"><i className="fas fa-piggy-bank"></i></div>
+              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-lg shadow-inner group-hover:scale-110 transition-transform"><i className="fas fa-piggy-bank"></i></div>
           </div>
       </div>
 
@@ -219,7 +205,7 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
             <tbody className="divide-y divide-gray-100">
               {filtered.map(c => (
                 <tr key={c.id} className="hover:bg-gray-50/50 transition-colors group">
-                  <td className="px-6 py-5">
+                  <td className="px-6 py-4">
                     <button 
                       onClick={() => { setHistoryCustomer(c); setShowHistoryModal(true); }} 
                       className="font-black text-emerald-800 hover:text-emerald-600 underline underline-offset-8 decoration-emerald-200 decoration-2 transition no-print text-left"
@@ -228,18 +214,18 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                     </button>
                     <span className="hidden print:inline font-black text-gray-800">{c.name}</span>
                   </td>
-                  <td className="px-6 py-5 text-gray-500 font-bold">{c.phone}</td>
-                  <td className="px-6 py-5 text-right">
+                  <td className="px-6 py-4 text-gray-500 font-bold">{c.phone}</td>
+                  <td className="px-6 py-4 text-right">
                     <div className="flex flex-col items-end">
-                      <span className={`px-4 py-1.5 rounded-xl text-xs font-black shadow-sm ${c.dueAmount > 0 ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>৳{Math.abs(c.dueAmount)}</span>
-                      <span className={`text-[9px] font-black uppercase mt-1 tracking-widest ${c.dueAmount > 0 ? t.dueLabel : t.advanceLabel}`}>{c.dueAmount > 0 ? t.dueLabel : t.advanceLabel}</span>
+                      <span className={`px-4 py-1.5 rounded-xl text-xs font-black shadow-sm ${c.dueAmount > 0 ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>৳{Math.abs(c.dueAmount).toLocaleString()}</span>
+                      <span className={`text-[9px] font-black uppercase mt-1 tracking-widest ${c.dueAmount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>{c.dueAmount > 0 ? t.dueLabel : t.advanceLabel}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-5 text-center no-print">
+                  <td className="px-6 py-4 text-center no-print">
                     <div className="flex justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => { setPayingCustomer(c); setPaymentAmount(c.dueAmount > 0 ? c.dueAmount : 0); setShowPayModal(true); }} className="w-10 h-10 flex items-center justify-center text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-600 hover:text-white transition shadow-sm border border-emerald-100" title={t.payTitle}><i className="fas fa-wallet"></i></button>
-                      <button onClick={() => { setEditingCustomer(c); setFormData({ name: c.name, phone: c.phone, dueAmount: c.dueAmount }); setShowModal(true); }} className="w-10 h-10 flex items-center justify-center text-blue-500 bg-blue-50 rounded-xl hover:bg-blue-500 hover:text-white transition shadow-sm border border-blue-100" title={t.editTitle}><i className="fas fa-user-pen"></i></button>
-                      <button onClick={() => { if(confirm(t.deleteConfirm)) onDelete(c.id) }} className="w-10 h-10 flex items-center justify-center text-rose-500 bg-rose-50 rounded-xl hover:bg-rose-500 hover:text-white transition shadow-sm border border-rose-100" title={t.deleteConfirm}><i className="fas fa-trash-can"></i></button>
+                      <button onClick={() => { setPayingCustomer(c); setPaymentAmount(c.dueAmount > 0 ? c.dueAmount : 0); setShowPayModal(true); }} className="w-9 h-9 flex items-center justify-center text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-600 hover:text-white transition shadow-sm border border-emerald-100" title={t.payTitle}><i className="fas fa-wallet text-sm"></i></button>
+                      <button onClick={() => { setEditingCustomer(c); setFormData({ name: c.name, phone: c.phone, dueAmount: c.dueAmount }); setShowModal(true); }} className="w-9 h-9 flex items-center justify-center text-blue-500 bg-blue-50 rounded-xl hover:bg-blue-500 hover:text-white transition shadow-sm border border-blue-100" title={t.editTitle}><i className="fas fa-user-pen text-sm"></i></button>
+                      <button onClick={() => { if(confirm(t.deleteConfirm)) onDelete(c.id) }} className="w-9 h-9 flex items-center justify-center text-rose-500 bg-rose-50 rounded-xl hover:bg-rose-500 hover:text-white transition shadow-sm border border-rose-100" title={t.deleteConfirm}><i className="fas fa-trash-can text-sm"></i></button>
                     </div>
                   </td>
                 </tr>
@@ -289,7 +275,7 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
              <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100">
                 <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Customer Name</p>
                 <p className="text-xl font-black text-emerald-900">{payingCustomer.name}</p>
-                <p className="text-xs font-bold text-emerald-600 mt-1">{t.due}: ৳{payingCustomer.dueAmount}</p>
+                <p className="text-xs font-bold text-emerald-600 mt-1">{t.due}: ৳{payingCustomer.dueAmount.toLocaleString()}</p>
              </div>
              <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -350,8 +336,8 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                         <tr key={log.id} className="hover:bg-gray-50 transition-colors">
                            <td className="p-4 font-bold text-gray-400 text-xs">{log.date}</td>
                            <td className="p-4 font-black text-gray-700">{log.details}</td>
-                           <td className="p-4 text-right font-black text-rose-600">{log.isSale ? `৳${log.debit}` : '-'}</td>
-                           <td className="p-4 text-right font-black text-emerald-600">{`৳${log.credit}`}</td>
+                           <td className="p-4 text-right font-black text-rose-600">{log.isSale ? `৳${log.debit.toLocaleString()}` : '-'}</td>
+                           <td className="p-4 text-right font-black text-emerald-600">{`৳${log.credit.toLocaleString()}`}</td>
                            <td className="p-4 text-center no-print">
                               <button onClick={() => { if(confirm('মুছে ফেলতে চান?')) log.isSale ? onDeleteLog(log.id) : onDeletePayment(log.id) }} className="text-rose-300 hover:text-rose-600 transition"><i className="fas fa-trash-can text-xs"></i></button>
                            </td>
@@ -363,7 +349,7 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
              
              <div className="mt-6 p-6 bg-slate-900 rounded-3xl flex justify-between items-center text-white">
                 <span className="font-black uppercase text-xs tracking-[0.2em]">বর্তমান মোট ব্যালেন্স:</span>
-                <span className={`text-2xl font-black ${historyCustomer.dueAmount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>৳{Math.abs(historyCustomer.dueAmount)} {historyCustomer.dueAmount > 0 ? '(বাকি)' : '(জমা)'}</span>
+                <span className={`text-2xl font-black ${historyCustomer.dueAmount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>৳{Math.abs(historyCustomer.dueAmount).toLocaleString()} {historyCustomer.dueAmount > 0 ? '(বাকি)' : '(জমা)'}</span>
              </div>
           </div>
         </div>

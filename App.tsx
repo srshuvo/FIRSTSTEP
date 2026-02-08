@@ -358,7 +358,7 @@ const App: React.FC = () => {
       />
       
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-30 md:hidden">
+        <header className="h-16 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-30 md:hidden no-print">
            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="w-10 h-10 flex items-center justify-center text-slate-900">
               <i className={`fas ${isSidebarOpen ? 'fa-times' : 'fa-bars-staggered'}`}></i>
            </button>

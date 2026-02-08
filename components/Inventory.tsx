@@ -90,26 +90,6 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
       if (isSelect) return;
       e.preventDefault();
       if (index > 0) elements[index - 1].focus();
-    } else if (e.key === 'ArrowRight') {
-      const isText = isInput && ['text', 'number', 'date'].includes((target as HTMLInputElement).type);
-      if (isText) {
-        const input = target as HTMLInputElement;
-        if (input.selectionStart !== input.value.length) return;
-      }
-      if (index < elements.length - 1) {
-        e.preventDefault();
-        elements[index + 1].focus();
-      }
-    } else if (e.key === 'ArrowLeft') {
-      const isText = isInput && ['text', 'number', 'date'].includes((target as HTMLInputElement).type);
-      if (isText) {
-        const input = target as HTMLInputElement;
-        if (input.selectionStart !== 0) return;
-      }
-      if (index > 0) {
-        e.preventDefault();
-        elements[index - 1].focus();
-      }
     }
   };
 
@@ -174,7 +154,7 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
       </div>
 
       <div className="flex-1 space-y-4">
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 no-print search-container">
           <div className="relative w-full md:w-80">
             <i className="fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
             <input 
@@ -205,11 +185,11 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-area">
           <div className="hidden print:block p-4 sm:p-6 text-center border-b-2 border-emerald-500 bg-emerald-50/10">
-             <h2 className="text-2xl sm:text-3xl font-black text-emerald-900 tracking-tighter">FIRST STEP - STOCK REPORT</h2>
+             <h2 className="text-2xl sm:text-3xl font-black text-emerald-900 tracking-tighter uppercase">FIRST STEP - STOCK REPORT</h2>
              <p className="text-[10px] sm:text-xs font-bold text-emerald-600 mt-1 uppercase tracking-[0.2em]">
                 {selectedCatId === 'all' ? (lang === 'bn' ? 'সকল পণ্যের খতিয়ান' : 'Full Stock Inventory') : (lang === 'bn' ? `ক্যাটাগরি রিপোর্ট` : `Category Stock Report`)}
              </p>
-             <div className="flex justify-center gap-4 sm:gap-6 mt-3 text-[10px] font-black">
+             <div className="flex justify-center gap-4 sm:gap-6 mt-3 text-[10px] font-black no-print">
                 <span className="border-r pr-4">Units: {currentStockStats.totalStock}</span>
                 <span>Value: ৳{currentStockStats.totalVal.toLocaleString()}</span>
              </div>
@@ -252,12 +232,21 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
                 </tr>
               ))}
             </tbody>
-            {/* The tfoot is configured via CSS to only appear at the very end on print */}
-            <tfoot className="border-t-2 border-emerald-600 bg-gray-50 font-black">
-                <tr>
-                    <td colSpan={3} className="px-4 sm:px-6 py-3 sm:py-4 text-[9px] sm:text-[10px] uppercase text-gray-400 font-black">{lang === 'bn' ? 'মোট ভ্যালু (Grand Total):' : 'Grand Total:'}</td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base text-emerald-800">৳{currentStockStats.totalVal.toLocaleString()}</td>
-                    <td colSpan={2} className="no-print"></td>
+            {/* Table Footer: Visible only at the very end of the list on print */}
+            <tfoot className="border-t-2 border-black bg-gray-50 font-black">
+                <tr className="bg-gray-50">
+                    <td colSpan={1} className="px-4 sm:px-6 py-3 sm:py-4 text-[9px] sm:text-[10px] uppercase text-gray-400 font-black">
+                        {lang === 'bn' ? 'সর্বমোট হিসাব:' : 'Grand Totals:'}
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-800 font-black">
+                        {lang === 'bn' ? 'মোট মাল (স্টক):' : 'Stock:'} {currentStockStats.totalStock} {lang === 'bn' ? 'ইউনিট' : 'Units'}
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-[9px] text-gray-400"></td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-emerald-800 font-black">
+                        {lang === 'bn' ? 'মোট ভ্যালু:' : 'Value:'} ৳{currentStockStats.totalVal.toLocaleString()}
+                    </td>
+                    <td colSpan={1}></td>
+                    <td className="no-print"></td>
                 </tr>
             </tfoot>
           </table>
@@ -266,7 +255,7 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-emerald-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-emerald-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
           <form ref={formRef} onKeyDown={handleKeyDown} onSubmit={handleSubmit} className="bg-white p-6 rounded-[2rem] shadow-2xl w-full max-w-md space-y-5 animate-scale-in max-h-[90vh] overflow-y-auto custom-scrollbar">
             <h3 className="text-2xl font-black text-emerald-900">{editing ? (lang === 'bn' ? 'এডিট পণ্য' : 'Edit Product') : (lang === 'bn' ? 'নতুন পণ্য' : 'New Product')}</h3>
             <div className="space-y-4">
@@ -299,7 +288,7 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
       )}
 
       {showCatModal && (
-        <div className="fixed inset-0 bg-emerald-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-emerald-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
           <div className="bg-white p-6 rounded-[2rem] shadow-2xl w-full max-w-lg space-y-6">
              <h3 className="font-black text-2xl text-emerald-900">{lang === 'bn' ? 'ক্যাটাগরি ম্যানেজ' : 'Manage Categories'}</h3>
              <form onSubmit={handleCatSubmit} className="flex gap-3">
@@ -320,7 +309,7 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
       )}
 
       {confirmDelete && (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
           <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-sm text-center space-y-5 animate-scale-in">
             <h3 className="text-2xl font-black text-gray-900">{lang === 'bn' ? 'মুছে ফেলতে চান?' : 'Delete?'}</h3>
             <p className="text-gray-500 font-bold italic">"{confirmDelete.name}"</p>
