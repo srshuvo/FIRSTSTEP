@@ -149,6 +149,25 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                 </tr>
               ))}
             </tbody>
+            {/* Added Footer for summary totals in print */}
+            <tfoot className="border-t-2 border-black bg-gray-50 font-black">
+                <tr>
+                    <td colSpan={2} className="px-6 py-4 text-[10px] font-black uppercase text-gray-500">{lang === 'bn' ? 'সর্বমোট হিসাব' : 'Grand Total Calculations'}</td>
+                    <td className="px-6 py-4 text-right">
+                        <div className="flex flex-col items-end space-y-1">
+                           <div className="flex gap-4">
+                               <span className="text-[9px] uppercase text-gray-400">{t.totalDue}:</span>
+                               <span className="text-sm font-black text-rose-600">৳{stats.totalDue.toLocaleString()}</span>
+                           </div>
+                           <div className="flex gap-4">
+                               <span className="text-[9px] uppercase text-gray-400">{t.totalAdvance}:</span>
+                               <span className="text-sm font-black text-emerald-700">৳{stats.totalAdvance.toLocaleString()}</span>
+                           </div>
+                        </div>
+                    </td>
+                    <td className="no-print"></td>
+                </tr>
+            </tfoot>
           </table>
         </div>
       </div>

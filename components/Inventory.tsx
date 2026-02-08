@@ -229,16 +229,15 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
                 </tr>
               ))}
             </tbody>
-            {/* Table Footer: Visible only at the very end on print */}
             <tfoot className="border-t-2 border-black bg-gray-50 font-black">
                 <tr className="bg-gray-50">
-                    <td className="px-4 sm:px-6 py-4 text-[9px] uppercase text-gray-400">{lang === 'bn' ? 'সর্বমোট হিসাব' : 'Grand Totals'}</td>
-                    <td className="px-4 sm:px-6 py-4 text-xs text-gray-800">
-                        {lang === 'bn' ? 'মোট মাল: ' : 'Stock: '} {currentStockStats.totalStock}
+                    <td className="px-4 sm:px-6 py-4 text-xs font-black uppercase text-gray-600">{lang === 'bn' ? 'সর্বমোট হিসাব' : 'Grand Totals'}</td>
+                    <td className="px-4 sm:px-6 py-4 text-sm text-gray-900 font-black">
+                        {lang === 'bn' ? 'মোট মাল: ' : 'Total Stock: '} {currentStockStats.totalStock}
                     </td>
                     <td className="px-4 sm:px-6 py-4"></td>
-                    <td className="px-4 sm:px-6 py-4 text-xs text-emerald-800">
-                        {lang === 'bn' ? 'মোট ভ্যালু: ' : 'Value: '} ৳{currentStockStats.totalVal.toLocaleString()}
+                    <td className="px-4 sm:px-6 py-4 text-sm text-emerald-900 font-black">
+                        {lang === 'bn' ? 'মোট ভ্যালু: ' : 'Total Value: '} ৳{currentStockStats.totalVal.toLocaleString()}
                     </td>
                     <td colSpan={1}></td>
                     <td className="no-print"></td>
