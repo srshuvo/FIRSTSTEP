@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AppData, Customer, PaymentLog, StockOut } from '../types';
 
@@ -49,7 +48,6 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
 
     // Find all focusable elements within the provided container
     const elements = Array.from(containerRef.current?.querySelectorAll('input, select, button') || [])
-      // FIX: Cast el to HTMLElement to avoid 'unknown' type error when accessing getAttribute and disabled.
       .filter(el => {
         const element = el as HTMLElement;
         return !(element as any).disabled && element.getAttribute('type') !== 'hidden';
@@ -268,12 +266,10 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                    <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{t.phone}</label>
                    <input required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold outline-none focus:border-emerald-500 transition" />
                 </div>
-                {!editingCustomer && (
-                   <div>
-                      <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{t.due}</label>
-                      <input type="number" value={formData.dueAmount} onChange={e => setFormData({...formData, dueAmount: Number(e.target.value)})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold outline-none focus:border-emerald-500 transition" />
-                   </div>
-                )}
+                <div>
+                   <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{t.due}</label>
+                   <input type="number" value={formData.dueAmount} onChange={e => setFormData({...formData, dueAmount: Number(e.target.value)})} className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl font-bold outline-none focus:border-emerald-500 transition" />
+                </div>
              </div>
              <div className="flex gap-4 pt-4">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black uppercase text-xs tracking-widest">{t.cancel}</button>
@@ -330,11 +326,11 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
              <div ref={historyFilterRef} onKeyDown={handleKeyDownNavigation(historyFilterRef)} className="grid grid-cols-2 gap-4 mb-6">
                 <div>
                    <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">শুরুর তারিখ</label>
-                   <input type="date" value={ledgerStartDate} onChange={e => setLedgerStartDate(e.target.value)} className="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
+                   <input type="date" value={ledgerStartDate} onChange={setLedgerStartDate} className="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
                 <div>
                    <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">শেষ তারিখ</label>
-                   <input type="date" value={ledgerEndDate} onChange={e => setLedgerEndDate(e.target.value)} className="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
+                   <input type="date" value={ledgerEndDate} onChange={setLedgerEndDate} className="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
              </div>
 
