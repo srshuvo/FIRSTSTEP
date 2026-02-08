@@ -86,9 +86,10 @@ const SSS: React.FC<SSSProps> = ({ data, onAdd, onUpdate, onDelete, lang }) => {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-area">
-        <div className="hidden print:block p-4 text-center border-b-2 border-rose-500 bg-rose-50">
+        <div className="hidden print:block p-8 text-center border-b-2 border-rose-500 bg-rose-50">
            <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">FIRST STEP - {t.title}</h2>
            <p className="text-[10px] font-bold text-gray-500 mt-1">{new Date().toLocaleDateString()}</p>
+           <div className="w-16 h-1 bg-rose-500 mx-auto mt-2 rounded-full"></div>
         </div>
 
         <table className="w-full text-left">
@@ -119,8 +120,8 @@ const SSS: React.FC<SSSProps> = ({ data, onAdd, onUpdate, onDelete, lang }) => {
           </tbody>
           <tfoot className="border-t-2 border-black bg-slate-50">
              <tr>
-               <td colSpan={3} className="px-6 py-3 font-black uppercase text-[10px] text-slate-400">{t.total}</td>
-               <td className="px-6 py-3 text-right font-black text-rose-600 text-base">৳{totalExpense.toLocaleString()}</td>
+               <td colSpan={3} className="px-6 py-4 font-black uppercase text-[10px] text-slate-400">{t.total}</td>
+               <td className="px-6 py-4 text-right font-black text-rose-600 text-base">৳{totalExpense.toLocaleString()}</td>
                <td className="no-print"></td>
              </tr>
           </tfoot>

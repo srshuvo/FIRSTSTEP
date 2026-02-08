@@ -31,7 +31,7 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
     title: lang === 'bn' ? 'ক্রেতা তালিকা (Customer List)' : 'Customer List',
     search: lang === 'bn' ? 'নাম বা ফোন দিয়ে খুঁজুন...' : 'Search Ledger...',
     newBtn: lang === 'bn' ? 'নতুন ক্রেতা' : 'New Customer',
-    totalDue: lang === 'bn' ? 'মোট পাওনা (বাকি)' : 'Total Due',
+    totalDue: lang === 'bn' ? 'মোট পাওনা (বাকি)' : 'Total Receivable',
     totalAdvance: lang === 'bn' ? 'মোট অগ্রিম (জমা)' : 'Total Advance',
     name: lang === 'bn' ? 'নাম' : 'Name',
     phone: lang === 'bn' ? 'ফোন' : 'Phone',
@@ -102,9 +102,10 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-area">
-        <div className="hidden print:block p-4 text-center border-b-2 border-emerald-500 bg-emerald-50/10">
+        <div className="hidden print:block p-8 text-center border-b-2 border-emerald-500 bg-emerald-50/10">
            <h2 className="text-2xl font-black text-emerald-900 tracking-tighter uppercase">FIRST STEP - {t.title}</h2>
            <p className="text-[10px] font-bold text-gray-500 mt-1">{new Date().toLocaleDateString()}</p>
+           <div className="w-16 h-1 bg-emerald-500 mx-auto mt-2 rounded-full"></div>
         </div>
 
         <div className="overflow-x-auto">

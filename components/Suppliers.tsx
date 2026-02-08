@@ -66,9 +66,10 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-area">
-        <div className="hidden print:block p-4 text-center border-b-2 border-slate-900 bg-slate-50">
+        <div className="hidden print:block p-8 text-center border-b-2 border-slate-900 bg-slate-50">
            <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">FIRST STEP - {t.title}</h2>
            <p className="text-[10px] font-bold text-gray-500 mt-1">{new Date().toLocaleDateString()}</p>
+           <div className="w-16 h-1 bg-slate-900 mx-auto mt-2 rounded-full"></div>
         </div>
 
         <div className="overflow-x-auto">
