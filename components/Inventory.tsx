@@ -229,17 +229,19 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
                 </tr>
               ))}
             </tbody>
-            <tfoot className="border-t-2 border-black bg-gray-50 font-black">
+            {/* The table footer is now carefully structured to avoid clipping in print */}
+            <tfoot className="border-t-2 border-black bg-gray-50 font-black print-grand-total">
                 <tr className="bg-gray-50">
-                    <td className="px-4 sm:px-6 py-4 text-xs font-black uppercase text-gray-600">{lang === 'bn' ? 'সর্বমোট হিসাব' : 'Grand Totals'}</td>
-                    <td className="px-4 sm:px-6 py-4 text-sm text-gray-900 font-black">
-                        {lang === 'bn' ? 'মোট মাল: ' : 'Total Stock: '} {currentStockStats.totalStock}
+                    <td className="px-4 sm:px-6 py-5 text-sm font-black uppercase text-gray-800">
+                        {lang === 'bn' ? 'সর্বমোট হিসাব' : 'Grand Totals'}
                     </td>
-                    <td className="px-4 sm:px-6 py-4"></td>
-                    <td className="px-4 sm:px-6 py-4 text-sm text-emerald-900 font-black">
-                        {lang === 'bn' ? 'মোট ভ্যালু: ' : 'Total Value: '} ৳{currentStockStats.totalVal.toLocaleString()}
+                    <td className="px-4 sm:px-6 py-5 text-sm text-gray-900 font-black">
+                        {lang === 'bn' ? 'মোট মাল: ' : 'Total Stock: '} <span className="text-emerald-700">{currentStockStats.totalStock}</span>
                     </td>
-                    <td colSpan={1}></td>
+                    <td className="px-4 sm:px-6 py-5"></td>
+                    <td colSpan={2} className="px-4 sm:px-6 py-5 text-sm text-emerald-900 font-black text-right">
+                        {lang === 'bn' ? 'মোট ভ্যালু: ' : 'Total Value: '} <span className="text-lg">৳{currentStockStats.totalVal.toLocaleString()}</span>
+                    </td>
                     <td className="no-print"></td>
                 </tr>
             </tfoot>

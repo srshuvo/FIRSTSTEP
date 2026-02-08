@@ -38,9 +38,25 @@
       .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
 
       @media print {
-        @page { size: auto; margin: 5mm 5mm; }
-        html, body { height: auto !important; overflow: visible !important; background: white !important; font-size: 10px; margin: 0; padding: 0; }
-        #root, main { display: block !important; position: static !important; overflow: visible !important; height: auto !important; width: 100% !important; }
+        @page { 
+          size: auto; 
+          margin: 10mm 5mm 15mm 5mm; 
+        }
+        html, body { 
+          height: auto !important; 
+          overflow: visible !important; 
+          background: white !important; 
+          font-size: 10px; 
+          margin: 0; 
+          padding: 0; 
+        }
+        #root, main { 
+          display: block !important; 
+          position: static !important; 
+          overflow: visible !important; 
+          height: auto !important; 
+          width: 100% !important; 
+        }
         .no-print, .no-print *, button, input, select, .search-container, .user-profile-logo, header.sticky, nav { 
           display: none !important; 
           height: 0 !important; 
@@ -49,16 +65,57 @@
           padding: 0 !important;
           visibility: hidden !important;
         }
-        .print-area { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; border: none !important; box-shadow: none !important; height: auto !important; overflow: visible !important; }
-        table { width: 100% !important; border-collapse: collapse !important; table-layout: auto; page-break-after: auto; margin-bottom: 20px !important; }
-        thead { display: table-header-group; }
-        /* Footer shows only at the end of the data list */
-        tfoot { display: table-row-group !important; border-top: 2px solid #000 !important; } 
-        th, td { border: 1px solid #000 !important; padding: 6px 8px !important; text-align: left; word-break: break-word; line-height: 1.3; vertical-align: middle; color: #000 !important; }
-        th { background-color: #f5f5f5 !important; font-weight: bold; font-size: 10px; -webkit-print-color-adjust: exact; }
-        tr { page-break-inside: avoid; page-break-after: auto; }
+        .print-area { 
+          display: block !important; 
+          width: 100% !important; 
+          margin: 0 !important; 
+          padding: 0 !important; 
+          border: none !important; 
+          box-shadow: none !important; 
+          height: auto !important; 
+          overflow: visible !important; 
+        }
+        table { 
+          width: 100% !important; 
+          border-collapse: collapse !important; 
+          table-layout: auto; 
+          page-break-after: auto; 
+          margin-bottom: 30px !important; 
+        }
+        thead { display: table-header-group !important; }
+        /* tfoot should only appear at the end */
+        tfoot { 
+          display: table-row-group !important; 
+          border-top: 2px solid #000 !important;
+        } 
+        th, td { 
+          border: 1px solid #000 !important; 
+          padding: 8px 10px !important; 
+          text-align: left; 
+          word-break: break-word; 
+          line-height: 1.4; 
+          vertical-align: middle; 
+          color: #000 !important; 
+        }
+        th { 
+          background-color: #f5f5f5 !important; 
+          font-weight: bold; 
+          font-size: 11px; 
+          -webkit-print-color-adjust: exact; 
+        }
+        tr { 
+          page-break-inside: avoid !important; 
+          page-break-after: auto; 
+        }
         .rounded-2xl, .rounded-3xl, .rounded-[2.5rem], .rounded-[3rem], .rounded-[3.5rem], .rounded-xl { border-radius: 0 !important; }
         .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl { box-shadow: none !important; }
+        
+        /* Ensure specific totals are large enough and visible */
+        .print-grand-total {
+          background-color: #f9fafb !important;
+          -webkit-print-color-adjust: exact;
+          font-weight: 900 !important;
+        }
       }
 
       .overflow-x-auto { -webkit-overflow-scrolling: touch; }
