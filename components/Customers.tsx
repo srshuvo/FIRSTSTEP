@@ -326,11 +326,11 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
              <div ref={historyFilterRef} onKeyDown={handleKeyDownNavigation(historyFilterRef)} className="grid grid-cols-2 gap-4 mb-6">
                 <div>
                    <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">শুরুর তারিখ</label>
-                   <input type="date" value={ledgerStartDate} onChange={setLedgerStartDate} className="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
+                   <input type="date" value={ledgerStartDate} onChange={e => setLedgerStartDate(e.target.value)} className="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
                 <div>
                    <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">শেষ তারিখ</label>
-                   <input type="date" value={ledgerEndDate} onChange={setLedgerEndDate} className="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
+                   <input type="date" value={ledgerEndDate} onChange={e => setLedgerEndDate(e.target.value)} className="w-full p-3 bg-gray-50 border rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
              </div>
 
