@@ -64,12 +64,14 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
     return { totalVal, totalStock };
   }, [filteredProducts]);
 
+  const selectedCategoryName = useMemo(() => {
+    if (selectedCatId === 'all') return lang === 'bn' ? 'সকল পণ্য' : 'All Products';
+    if (selectedCatId === 'none') return lang === 'bn' ? 'ক্যাটাগরি ছাড়া' : 'Uncategorized';
+    return data.categories.find(c => c.id === selectedCatId)?.name || '';
+  }, [selectedCatId, data.categories, lang]);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const target = e.target as HTMLElement;
-    const isInput = target.tagName === 'INPUT';
-    const isSelect = target.tagName === 'SELECT';
-    const isButton = target.tagName === 'BUTTON';
-
     const elements = Array.from(formRef.current?.elements || []).filter(el => {
       const tag = (el as HTMLElement).tagName;
       return (tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON') && !(el as any).disabled;
@@ -79,17 +81,9 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
     if (index === -1) return;
 
     if (e.key === 'Enter') {
-      if (isButton && (target as HTMLButtonElement).type === 'submit') return;
+      if (target.tagName === 'BUTTON' && (target as HTMLButtonElement).type === 'submit') return;
       e.preventDefault();
       if (index < elements.length - 1) elements[index + 1].focus();
-    } else if (e.key === 'ArrowDown') {
-      if (isSelect) return;
-      e.preventDefault();
-      if (index < elements.length - 1) elements[index + 1].focus();
-    } else if (e.key === 'ArrowUp') {
-      if (isSelect) return;
-      e.preventDefault();
-      if (index > 0) elements[index - 1].focus();
     }
   };
 
@@ -173,25 +167,25 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:gap-4 no-print">
-            <div className="bg-emerald-50 border border-emerald-100 p-4 sm:p-5 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col">
-                <span className="text-[9px] sm:text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">{lang === 'bn' ? 'মোট স্টক মূল্য' : 'Stock Value'}</span>
-                <span className="text-lg sm:text-xl font-black text-emerald-700">৳{currentStockStats.totalVal.toLocaleString()}</span>
+            <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex flex-col">
+                <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-1">{lang === 'bn' ? 'মোট স্টক মূল্য' : 'Stock Value'}</span>
+                <span className="text-lg font-black text-emerald-700">৳{currentStockStats.totalVal.toLocaleString()}</span>
             </div>
-            <div className="bg-slate-50 border border-slate-100 p-4 sm:p-5 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col">
-                <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{lang === 'bn' ? 'মোট মাল (স্টক)' : 'Total Stock Qty'}</span>
-                <span className="text-lg sm:text-xl font-black text-slate-700">{currentStockStats.totalStock} <span className="text-xs">{lang === 'bn' ? 'ইউনিট' : 'Units'}</span></span>
+            <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex flex-col">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{lang === 'bn' ? 'মোট মাল (স্টক)' : 'Total Stock Qty'}</span>
+                <span className="text-lg font-black text-slate-700">{currentStockStats.totalStock} <span className="text-xs">{lang === 'bn' ? 'ইউনিট' : 'Units'}</span></span>
             </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-area">
-          <div className="hidden print:block p-4 sm:p-6 text-center border-b-2 border-emerald-500 bg-emerald-50/10">
-             <h2 className="text-2xl sm:text-3xl font-black text-emerald-900 tracking-tighter uppercase">FIRST STEP - STOCK REPORT</h2>
-             <p className="text-[10px] sm:text-xs font-bold text-emerald-600 mt-1 uppercase tracking-[0.2em]">
-                {selectedCatId === 'all' ? (lang === 'bn' ? 'সকল পণ্যের খতিয়ান' : 'Full Stock Inventory') : (lang === 'bn' ? `ক্যাটাগরি রিপোর্ট` : `Category Stock Report`)}
+          <div className="hidden print:block p-6 text-center border-b-2 border-emerald-500 bg-emerald-50/10">
+             <h2 className="text-3xl font-black text-emerald-900 tracking-tighter uppercase">FIRST STEP - STOCK REPORT</h2>
+             <p className="text-xs font-black text-emerald-600 mt-1 uppercase tracking-[0.2em]">
+                {lang === 'bn' ? 'ক্যাটাগরি: ' : 'Category: '} {selectedCategoryName}
              </p>
-             <div className="flex justify-center gap-4 sm:gap-6 mt-3 text-[10px] font-black no-print">
-                <span className="border-r pr-4">Units: {currentStockStats.totalStock}</span>
-                <span>Value: ৳{currentStockStats.totalVal.toLocaleString()}</span>
+             <div className="flex justify-center gap-6 mt-3 text-[10px] font-black">
+                <span className="border-r pr-4 uppercase">Total Units: {currentStockStats.totalStock}</span>
+                <span className="uppercase">Total Value: ৳{currentStockStats.totalVal.toLocaleString()}</span>
              </div>
           </div>
 
@@ -209,21 +203,21 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
             <tbody className="divide-y divide-gray-100">
               {filteredProducts.map(p => (
                 <tr key={p.id} className="hover:bg-emerald-50/10 transition-colors">
-                  <td className="px-4 sm:px-6 py-2.5 sm:py-4">
+                  <td className="px-4 sm:px-6 py-2.5">
                     <p className="font-black text-gray-800 leading-tight text-xs sm:text-sm">{p.name}</p>
-                    <p className="text-[8px] sm:text-[9px] font-bold text-emerald-600 mt-0.5 uppercase tracking-tighter">
+                    <p className="text-[8px] font-bold text-emerald-600 mt-0.5 uppercase tracking-tighter">
                       {p.categoryId ? data.categories.find(c => c.id === p.categoryId)?.name : (lang === 'bn' ? 'ক্যাটাগরি ছাড়া' : 'Uncategorized')}
                     </p>
                   </td>
-                  <td className="px-4 sm:px-6 py-2.5 sm:py-4">
-                    <span className={`px-2 py-0.5 rounded-full font-black text-[10px] sm:text-xs border ${p.stock <= (p.lowStockThreshold || 10) ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-gray-50 text-gray-700 border-gray-100'}`}>
+                  <td className="px-4 sm:px-6 py-2.5">
+                    <span className={`px-2 py-0.5 rounded-full font-black text-[10px] border ${p.stock <= (p.lowStockThreshold || 10) ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-gray-50 text-gray-700 border-gray-100'}`}>
                       {p.stock} {p.unit}
                     </span>
                   </td>
-                  <td className="px-4 sm:px-6 py-2.5 sm:py-4 text-gray-400 font-bold text-[10px] sm:text-xs">৳{p.costPrice.toLocaleString()}</td>
-                  <td className="px-4 sm:px-6 py-2.5 sm:py-4 font-black text-slate-700 text-[10px] sm:text-xs">৳{(p.stock * p.costPrice).toLocaleString()}</td>
-                  <td className="px-4 sm:px-6 py-2.5 sm:py-4 font-black text-emerald-600 text-[10px] sm:text-xs">৳{p.salePrice.toLocaleString()}</td>
-                  <td className="px-4 sm:px-6 py-2.5 sm:py-4 text-center no-print">
+                  <td className="px-4 sm:px-6 py-2.5 text-gray-400 font-bold text-[10px]">৳{p.costPrice.toLocaleString()}</td>
+                  <td className="px-4 sm:px-6 py-2.5 font-black text-slate-700 text-[10px]">৳{(p.stock * p.costPrice).toLocaleString()}</td>
+                  <td className="px-4 sm:px-6 py-2.5 font-black text-emerald-600 text-[10px]">৳{p.salePrice.toLocaleString()}</td>
+                  <td className="px-4 sm:px-6 py-2.5 text-center no-print">
                     <div className="flex justify-center gap-1">
                       <button onClick={() => { setEditing(p); setFormData({ ...p, categoryId: p.categoryId || '', lowStockThreshold: p.lowStockThreshold || 10 }); setShowModal(true); }} className="text-blue-500 p-2 hover:bg-blue-50 rounded-lg"><i className="fas fa-edit"></i></button>
                       <button onClick={() => setConfirmDelete({ id: p.id, name: p.name, type: 'product' })} className="text-red-500 p-2 hover:bg-red-50 rounded-lg"><i className="fas fa-trash-can"></i></button>
@@ -232,18 +226,15 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
                 </tr>
               ))}
             </tbody>
-            {/* Table Footer: Visible only at the very end of the list on print */}
             <tfoot className="border-t-2 border-black bg-gray-50 font-black">
                 <tr className="bg-gray-50">
-                    <td colSpan={1} className="px-4 sm:px-6 py-3 sm:py-4 text-[9px] sm:text-[10px] uppercase text-gray-400 font-black">
-                        {lang === 'bn' ? 'সর্বমোট হিসাব:' : 'Grand Totals:'}
+                    <td className="px-4 sm:px-6 py-3 text-[9px] uppercase text-gray-400">{lang === 'bn' ? 'সর্বমোট হিসাব' : 'Grand Totals'}</td>
+                    <td className="px-4 sm:px-6 py-3 text-xs text-gray-800">
+                        {lang === 'bn' ? 'মোট মাল: ' : 'Stock: '} {currentStockStats.totalStock}
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-800 font-black">
-                        {lang === 'bn' ? 'মোট মাল (স্টক):' : 'Stock:'} {currentStockStats.totalStock} {lang === 'bn' ? 'ইউনিট' : 'Units'}
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-[9px] text-gray-400"></td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-emerald-800 font-black">
-                        {lang === 'bn' ? 'মোট ভ্যালু:' : 'Value:'} ৳{currentStockStats.totalVal.toLocaleString()}
+                    <td className="px-4 sm:px-6 py-3"></td>
+                    <td className="px-4 sm:px-6 py-3 text-xs text-emerald-800">
+                        {lang === 'bn' ? 'মোট ভ্যালু: ' : 'Value: '} ৳{currentStockStats.totalVal.toLocaleString()}
                     </td>
                     <td colSpan={1}></td>
                     <td className="no-print"></td>
@@ -275,8 +266,8 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
                 <input type="number" placeholder={lang === 'bn' ? 'বিক্রি দাম' : 'Price'} value={formData.salePrice || ''} onChange={e => setFormData({...formData, salePrice: Number(e.target.value)})} className="w-full border p-3.5 rounded-2xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500" />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'স্টক এলার্ট লিমিট (Stock Alert)' : 'Stock Alert Threshold'}</label>
-                <input type="number" placeholder={lang === 'bn' ? 'স্টক এলার্ট লিমিট' : 'Alert at stock level...'} value={formData.lowStockThreshold || ''} onChange={e => setFormData({...formData, lowStockThreshold: Number(e.target.value)})} className="w-full border p-3.5 rounded-2xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500" />
+                <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'স্টক এলার্ট লিমিট' : 'Low Stock Alert'}</label>
+                <input type="number" value={formData.lowStockThreshold || ''} onChange={e => setFormData({...formData, lowStockThreshold: Number(e.target.value)})} className="w-full border p-3.5 rounded-2xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500" />
               </div>
             </div>
             <div className="flex gap-4 pt-4">
@@ -297,7 +288,7 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
              </form>
              <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                 {data.categories.map(cat => (
-                  <div key={cat.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 group hover:border-emerald-200 transition-colors">
+                  <div key={cat.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
                     <span className="font-black text-gray-700">{cat.name}</span>
                     <button onClick={() => setConfirmDelete({ id: cat.id, name: cat.name, type: 'category' })} className="text-red-500 p-1 hover:text-red-700 transition"><i className="fas fa-trash-can"></i></button>
                   </div>
@@ -313,9 +304,9 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
           <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-sm text-center space-y-5 animate-scale-in">
             <h3 className="text-2xl font-black text-gray-900">{lang === 'bn' ? 'মুছে ফেলতে চান?' : 'Delete?'}</h3>
             <p className="text-gray-500 font-bold italic">"{confirmDelete.name}"</p>
-            <div className="flex gap-4 pt-4">
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-4 bg-gray-100 rounded-2xl font-black uppercase text-xs tracking-widest">Cancel</button>
-              <button onClick={() => { if (confirmDelete.type === 'product') onDelete(confirmDelete.id); else onDeleteCategory(confirmDelete.id); setConfirmDelete(null); }} className="flex-1 py-4 bg-red-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl">Delete</button>
+            <div className="flex gap-3 pt-4">
+              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-4 bg-gray-100 rounded-2xl font-black uppercase text-xs">Cancel</button>
+              <button onClick={() => { if (confirmDelete.type === 'product') onDelete(confirmDelete.id); else onDeleteCategory(confirmDelete.id); setConfirmDelete(null); }} className="flex-1 py-4 bg-red-600 text-white rounded-2xl font-black uppercase text-xs">Delete</button>
             </div>
           </div>
         </div>
