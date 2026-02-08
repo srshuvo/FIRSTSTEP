@@ -38,14 +38,18 @@
       .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
 
       @media print {
-        @page { size: A4; margin: 15mm 10mm; }
-        body { background: white !important; font-size: 12px; }
+        @page { size: auto; margin: 5mm; }
+        body { background: white !important; font-size: 10px; margin: 0; padding: 0; }
         .no-print { display: none !important; }
         .print-area { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; border: none !important; box-shadow: none !important; }
-        table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px; }
-        th, td { border: 1px solid #e2e8f0 !important; padding: 10px !important; text-align: left; }
-        th { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; color: #1e293b !important; font-weight: 800; }
-        .print-header { display: block !important; text-align: center; margin-bottom: 20px; border-bottom: 4px solid #059669; padding-bottom: 15px; }
+        table { width: 100% !important; border-collapse: collapse !important; margin-top: 5px; table-layout: auto; }
+        th, td { border: 1px solid #ddd !important; padding: 4px 6px !important; text-align: left; word-break: break-word; line-height: 1.2; }
+        th { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; color: #000 !important; font-weight: bold; font-size: 9px; }
+        tr { page-break-inside: avoid; page-break-after: auto; }
+        .print-header { display: block !important; text-align: center; margin-bottom: 10px; border-bottom: 2px solid #059669; padding-bottom: 5px; }
+        h1, h2, h3 { margin: 2px 0; }
+        .rounded-2xl, .rounded-3xl, .rounded-[2.5rem], .rounded-[3rem], .rounded-[3.5rem] { border-radius: 0 !important; }
+        .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl { box-shadow: none !important; }
       }
 
       .overflow-x-auto { -webkit-overflow-scrolling: touch; }

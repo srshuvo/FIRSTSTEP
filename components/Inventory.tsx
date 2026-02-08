@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AppData, Product, Category } from '../types';
 
@@ -143,9 +144,9 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6">
+    <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
       <div className="lg:w-80 space-y-4 no-print">
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 h-fit sticky top-4 overflow-hidden">
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 h-fit sticky top-4 overflow-hidden">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-black text-emerald-900 uppercase text-[10px] tracking-widest">{lang === 'bn' ? 'ক্যাটাগরি' : 'Categories'}</h3>
             <button onClick={() => setShowCatModal(true)} className="w-8 h-8 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 border border-emerald-100"><i className="fas fa-folder-tree"></i></button>
@@ -173,7 +174,7 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
       </div>
 
       <div className="flex-1 space-y-4">
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
           <div className="relative w-full md:w-80">
             <i className="fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
             <input 
@@ -182,78 +183,80 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
               placeholder={lang === 'bn' ? 'খুঁজুন... (Alt+S)' : 'Search... (Alt+S)'} 
               value={searchTerm} 
               onChange={e => setSearchTerm(e.target.value)} 
-              className="w-full pl-10 pr-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold" 
+              className="w-full pl-10 pr-4 py-2.5 border rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold" 
             />
           </div>
           <div className="flex gap-2 w-full md:w-auto">
-            <button onClick={handlePrint} className="flex-1 bg-gray-50 text-gray-600 px-5 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest border border-gray-100 hover:bg-gray-100 transition flex items-center justify-center gap-2"><i className="fas fa-print"></i> {lang === 'bn' ? 'প্রিন্ট রিপোর্ট' : 'Print'}</button>
-            <button onClick={() => { setEditing(null); setFormData({ name: '', categoryId: '', stock: 0, unit: 'Pcs', costPrice: 0, salePrice: 0, lowStockThreshold: 10 }); setShowModal(true); }} className="flex-1 bg-emerald-600 text-white px-6 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg hover:bg-emerald-700 transition">{lang === 'bn' ? 'নতুন পণ্য' : 'Add Product'}</button>
+            <button onClick={handlePrint} className="flex-1 bg-gray-50 text-gray-600 px-5 py-2.5 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-gray-100 hover:bg-gray-100 transition flex items-center justify-center gap-2"><i className="fas fa-print"></i> {lang === 'bn' ? 'প্রিন্ট রিপোর্ট' : 'Print'}</button>
+            <button onClick={() => { setEditing(null); setFormData({ name: '', categoryId: '', stock: 0, unit: 'Pcs', costPrice: 0, salePrice: 0, lowStockThreshold: 10 }); setShowModal(true); }} className="flex-1 bg-emerald-600 text-white px-6 py-2.5 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg hover:bg-emerald-700 transition active:scale-95">{lang === 'bn' ? 'নতুন পণ্য' : 'Add Product'}</button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 no-print">
-            <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-[2rem] flex flex-col">
-                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">{lang === 'bn' ? 'মোট স্টক মূল্য' : 'Stock Value'}</span>
-                <span className="text-xl font-black text-emerald-700">৳{currentStockStats.totalVal.toLocaleString()}</span>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 no-print">
+            <div className="bg-emerald-50 border border-emerald-100 p-4 sm:p-5 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col">
+                <span className="text-[9px] sm:text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">{lang === 'bn' ? 'মোট স্টক মূল্য' : 'Stock Value'}</span>
+                <span className="text-lg sm:text-xl font-black text-emerald-700">৳{currentStockStats.totalVal.toLocaleString()}</span>
             </div>
-            <div className="bg-slate-50 border border-slate-100 p-5 rounded-[2rem] flex flex-col">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{lang === 'bn' ? 'মোট মাল (স্টক)' : 'Total Stock Qty'}</span>
-                <span className="text-xl font-black text-slate-700">{currentStockStats.totalStock} <span className="text-xs">{lang === 'bn' ? 'ইউনিট' : 'Units'}</span></span>
+            <div className="bg-slate-50 border border-slate-100 p-4 sm:p-5 rounded-[1.5rem] sm:rounded-[2rem] flex flex-col">
+                <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{lang === 'bn' ? 'মোট মাল (স্টক)' : 'Total Stock Qty'}</span>
+                <span className="text-lg sm:text-xl font-black text-slate-700">{currentStockStats.totalStock} <span className="text-xs">{lang === 'bn' ? 'ইউনিট' : 'Units'}</span></span>
             </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-area">
-          <div className="hidden print:block p-8 text-center border-b-2 border-emerald-500 bg-emerald-50/20">
-             <h2 className="text-3xl font-black text-emerald-900">FIRST STEP - STOCK REPORT</h2>
-             <p className="text-xs font-bold text-emerald-600 mt-1 uppercase tracking-[0.2em]">
+          <div className="hidden print:block p-4 sm:p-8 text-center border-b-2 border-emerald-500 bg-emerald-50/20">
+             <h2 className="text-2xl sm:text-3xl font-black text-emerald-900">FIRST STEP - STOCK REPORT</h2>
+             <p className="text-[10px] sm:text-xs font-bold text-emerald-600 mt-1 uppercase tracking-[0.2em]">
                 {selectedCatId === 'all' ? (lang === 'bn' ? 'সকল পণ্যের খতিয়ান' : 'Full Stock Inventory') : (lang === 'bn' ? `ক্যাটাগরি: ${getCatSummary(selectedCatId).count} পণ্য` : `Category View`)}
              </p>
-             <div className="flex justify-center gap-6 mt-4 text-xs font-black">
-                <span className="bg-white px-4 py-1 rounded-full border">Total Stock: {currentStockStats.totalStock}</span>
-                <span className="bg-white px-4 py-1 rounded-full border text-emerald-700">Value: ৳{currentStockStats.totalVal.toLocaleString()}</span>
+             <div className="flex justify-center gap-4 sm:gap-6 mt-3 sm:mt-4 text-[10px] sm:text-xs font-black">
+                <span className="bg-white px-4 py-1 rounded-full border">Total Units: {currentStockStats.totalStock}</span>
+                <span className="bg-white px-4 py-1 rounded-full border text-emerald-700">Total Value: ৳{currentStockStats.totalVal.toLocaleString()}</span>
              </div>
           </div>
 
           <table className="w-full text-left">
-            <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            <thead className="bg-gray-50 text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">
               <tr>
-                <th className="px-6 py-4">{lang === 'bn' ? 'পণ্যের নাম' : 'Name'}</th>
-                <th className="px-6 py-4">{lang === 'bn' ? 'স্টক' : 'Stock'}</th>
-                <th className="px-6 py-4">{lang === 'bn' ? 'কেনা দাম' : 'Cost'}</th>
-                <th className="px-6 py-4">{lang === 'bn' ? 'স্টক ভ্যালু' : 'Stock Val'}</th>
-                <th className="px-6 py-4">{lang === 'bn' ? 'বিক্রি দাম' : 'Sale Price'}</th>
-                <th className="px-6 py-4 text-center no-print">{lang === 'bn' ? 'অ্যাকশন' : 'Action'}</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4">{lang === 'bn' ? 'পণ্যের নাম' : 'Name'}</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4">{lang === 'bn' ? 'স্টক' : 'Stock'}</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4">{lang === 'bn' ? 'কেনা দাম' : 'Cost'}</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4">{lang === 'bn' ? 'স্টক ভ্যালু' : 'Stock Val'}</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4">{lang === 'bn' ? 'বিক্রি দাম' : 'Sale Price'}</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-center no-print">{lang === 'bn' ? 'অ্যাকশন' : 'Action'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredProducts.map(p => (
                 <tr key={p.id} className="hover:bg-emerald-50/20 transition-colors">
-                  <td className="px-6 py-4">
-                    <p className="font-black text-gray-800 leading-tight">{p.name}</p>
-                    <p className="text-[10px] font-bold text-emerald-600 mt-1 uppercase tracking-tighter">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4">
+                    <p className="font-black text-gray-800 leading-tight text-xs sm:text-sm">{p.name}</p>
+                    <p className="text-[8px] sm:text-[10px] font-bold text-emerald-600 mt-0.5 sm:mt-1 uppercase tracking-tighter">
                       <i className="fas fa-hashtag mr-1 opacity-50"></i>
                       {p.categoryId ? data.categories.find(c => c.id === p.categoryId)?.name : (lang === 'bn' ? 'ক্যাটাগরি ছাড়া' : 'Uncategorized')}
                     </p>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full font-black text-xs border ${p.stock <= (p.lowStockThreshold || 10) ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-gray-50 text-gray-700 border-gray-100'}`}>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4">
+                    <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full font-black text-[10px] sm:text-xs border ${p.stock <= (p.lowStockThreshold || 10) ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-gray-50 text-gray-700 border-gray-100'}`}>
                       {p.stock} {p.unit}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-gray-400 font-bold">৳{p.costPrice.toLocaleString()}</td>
-                  <td className="px-6 py-4 font-black text-slate-700">৳{(p.stock * p.costPrice).toLocaleString()}</td>
-                  <td className="px-6 py-4 font-black text-emerald-600">৳{p.salePrice.toLocaleString()}</td>
-                  <td className="px-6 py-4 text-center no-print">
-                    <button onClick={() => { setEditing(p); setFormData({ ...p, categoryId: p.categoryId || '', lowStockThreshold: p.lowStockThreshold || 10 }); setShowModal(true); }} className="text-blue-500 p-2"><i className="fas fa-edit"></i></button>
-                    <button onClick={() => setConfirmDelete({ id: p.id, name: p.name, type: 'product' })} className="text-red-500 p-2"><i className="fas fa-trash-can"></i></button>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-400 font-bold text-[10px] sm:text-xs">৳{p.costPrice.toLocaleString()}</td>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 font-black text-slate-700 text-[10px] sm:text-xs">৳{(p.stock * p.costPrice).toLocaleString()}</td>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 font-black text-emerald-600 text-[10px] sm:text-xs">৳{p.salePrice.toLocaleString()}</td>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-center no-print">
+                    <div className="flex justify-center gap-1">
+                      <button onClick={() => { setEditing(p); setFormData({ ...p, categoryId: p.categoryId || '', lowStockThreshold: p.lowStockThreshold || 10 }); setShowModal(true); }} className="text-blue-500 p-2 hover:bg-blue-50 rounded-lg"><i className="fas fa-edit"></i></button>
+                      <button onClick={() => setConfirmDelete({ id: p.id, name: p.name, type: 'product' })} className="text-red-500 p-2 hover:bg-red-50 rounded-lg"><i className="fas fa-trash-can"></i></button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
             <tfoot className="bg-gray-50 border-t-2 border-gray-100 font-black">
                 <tr>
-                    <td colSpan={3} className="px-6 py-4 text-[10px] uppercase text-gray-400">{lang === 'bn' ? 'মোট ভ্যালু:' : 'Grand Total:'}</td>
-                    <td className="px-6 py-4 text-lg text-emerald-700">৳{currentStockStats.totalVal.toLocaleString()}</td>
+                    <td colSpan={3} className="px-4 sm:px-6 py-3 sm:py-4 text-[9px] sm:text-[10px] uppercase text-gray-400">{lang === 'bn' ? 'মোট ভ্যালু:' : 'Grand Total:'}</td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-lg text-emerald-700">৳{currentStockStats.totalVal.toLocaleString()}</td>
                     <td colSpan={2} className="no-print"></td>
                 </tr>
             </tfoot>
@@ -264,7 +267,7 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
 
       {showModal && (
         <div className="fixed inset-0 bg-emerald-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <form ref={formRef} onKeyDown={handleKeyDown} onSubmit={handleSubmit} className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md space-y-5 animate-scale-in max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <form ref={formRef} onKeyDown={handleKeyDown} onSubmit={handleSubmit} className="bg-white p-6 rounded-[2rem] shadow-2xl w-full max-w-md space-y-5 animate-scale-in max-h-[90vh] overflow-y-auto custom-scrollbar">
             <h3 className="text-2xl font-black text-emerald-900">{editing ? (lang === 'bn' ? 'এডিট পণ্য' : 'Edit Product') : (lang === 'bn' ? 'নতুন পণ্য' : 'New Product')}</h3>
             <div className="space-y-4">
               <input required placeholder={lang === 'bn' ? 'পণ্যের নাম' : 'Product Name'} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border p-3.5 rounded-2xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500" />
@@ -297,7 +300,7 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
 
       {showCatModal && (
         <div className="fixed inset-0 bg-emerald-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-lg space-y-6">
+          <div className="bg-white p-6 rounded-[2rem] shadow-2xl w-full max-w-lg space-y-6">
              <h3 className="font-black text-2xl text-emerald-900">{lang === 'bn' ? 'ক্যাটাগরি ম্যানেজ' : 'Manage Categories'}</h3>
              <form onSubmit={handleCatSubmit} className="flex gap-3">
                 <input required placeholder={lang === 'bn' ? 'ক্যাটাগরি নাম' : 'Category Name'} value={catFormData.name} onChange={e => setCatFormData({ name: e.target.value })} className="flex-1 border p-3.5 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" />

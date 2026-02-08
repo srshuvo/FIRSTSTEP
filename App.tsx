@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { User, UserRole, AppData, Product, Customer, Supplier, StockIn, StockOut, PaymentLog, Category, LedgerEntry } from './types';
@@ -214,7 +215,7 @@ const App: React.FC = () => {
       stockInLogs: [log, ...prev.stockInLogs],
       products: prev.products.map(p => {
         if (p.id === log.productId) {
-          // Weighted average price calculation + Rounding UP
+          // Weighted average price calculation + Rounding UP as requested
           const currentTotalValue = (p.stock * p.costPrice);
           const newEntryValue = (log.quantity * log.unitPrice);
           const newTotalStock = p.stock + log.quantity;

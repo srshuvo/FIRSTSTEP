@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState, useEffect } from 'react';
 import { AppData, Product, StockOut } from '../types';
 
@@ -174,33 +175,33 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
   };
 
   return (
-    <div className="space-y-8 animate-scale-in">
-      <div className="flex flex-col xl:flex-row justify-between items-center gap-6">
-        <div className="flex flex-col justify-center">
-          <h1 className="text-4xl font-black text-slate-900 leading-none tracking-tighter neon-text uppercase">FIRST STEP</h1>
-          <div className="flex items-center gap-2 mt-2">
+    <div className="space-y-6 sm:space-y-8 animate-scale-in">
+      <div className="flex flex-col xl:flex-row justify-between items-center gap-4 sm:gap-6">
+        <div className="flex flex-col justify-center text-center xl:text-left">
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 leading-none tracking-tighter neon-text uppercase">FIRST STEP</h1>
+          <div className="flex items-center justify-center xl:justify-start gap-2 mt-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse neon-border"></span>
-            <p className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.4em]">Enterprise Khata v2.0</p>
+            <p className="text-[10px] sm:text-[11px] font-black text-emerald-600 uppercase tracking-[0.4em]">Enterprise Khata v2.0</p>
           </div>
         </div>
 
-        <div className="no-print flex flex-wrap items-center justify-center gap-3">
-          <div className="bg-slate-950 text-emerald-400 px-6 py-4 rounded-[2.5rem] shadow-2xl flex items-center gap-5 border-2 border-slate-800 relative overflow-hidden group min-h-[85px]">
+        <div className="no-print flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+          <div className="bg-slate-950 text-emerald-400 px-4 sm:px-6 py-3 sm:py-4 rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl flex items-center gap-3 sm:gap-5 border-2 border-slate-800 relative overflow-hidden group min-h-[70px] sm:min-h-[85px]">
             <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-emerald-500/10 transition-all"></div>
             <div className="flex flex-col items-center">
-              <span className="text-[7px] font-black uppercase text-emerald-800 tracking-[0.4em] mb-1.5 leading-none">System Sync</span>
-              <div className="flex items-baseline font-mono-tech text-3xl font-black leading-none tracking-tight">
+              <span className="text-[6px] sm:text-[7px] font-black uppercase text-emerald-800 tracking-[0.4em] mb-1 leading-none">System Sync</span>
+              <div className="flex items-baseline font-mono-tech text-2xl sm:text-3xl font-black leading-none tracking-tight">
                 <span className="drop-shadow-[0_0_12px_rgba(52,211,153,0.8)]">{clock.hours}</span>
                 <span className="mx-1 text-slate-700 animate-pulse">:</span>
                 <span className="drop-shadow-[0_0_12px_rgba(52,211,153,0.8)]">{clock.minutes}</span>
-                <span className="text-[9px] ml-2 font-black text-emerald-600 uppercase tracking-tighter">{clock.ampm}</span>
+                <span className="text-[8px] sm:text-[9px] ml-1 sm:ml-2 font-black text-emerald-600 uppercase tracking-tighter">{clock.ampm}</span>
               </div>
             </div>
-            <div className="w-[1px] h-10 bg-slate-800 rounded-full opacity-50"></div>
+            <div className="w-[1px] h-8 sm:h-10 bg-slate-800 rounded-full opacity-50"></div>
             <div className="flex flex-col items-center justify-center">
-               <span className="text-xs font-black text-emerald-500 font-mono-tech">{clock.seconds}</span>
-               <div className="w-2 h-2 bg-emerald-400/20 rounded-full mt-2 flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping"></div>
+               <span className="text-[10px] sm:text-xs font-black text-emerald-500 font-mono-tech">{clock.seconds}</span>
+               <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-400/20 rounded-full mt-1 sm:mt-2 flex items-center justify-center">
+                  <div className="w-1 sm:w-1.5 h-1 sm:h-1.5 bg-emerald-400 rounded-full animate-ping"></div>
                </div>
             </div>
           </div>
@@ -211,23 +212,23 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         </div>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-md p-3 rounded-[3rem] shadow-sm border border-slate-100 flex flex-wrap gap-2 items-center no-print sticky top-4 z-20">
-        <div className="flex items-center gap-2 px-5 py-2.5 bg-slate-950 rounded-full border border-slate-800 mr-2">
-           <i className="fas fa-microchip text-emerald-500 text-[10px] animate-pulse"></i>
-           <span className="text-[10px] font-black uppercase text-emerald-500 tracking-[0.2em]">Filters</span>
+      <div className="bg-white/80 backdrop-blur-md p-2 rounded-3xl shadow-sm border border-slate-100 flex flex-wrap gap-1 sm:gap-2 items-center no-print sticky top-4 z-20">
+        <div className="flex items-center gap-2 px-4 py-2 bg-slate-950 rounded-full border border-slate-800">
+           <i className="fas fa-microchip text-emerald-500 text-[8px] sm:text-[10px] animate-pulse"></i>
+           <span className="text-[8px] sm:text-[10px] font-black uppercase text-emerald-500 tracking-[0.2em]">Filters</span>
         </div>
         {['today', '7days', 'month', '6months', '12months', 'custom'].map(f => (
           <button
             key={f}
             onClick={() => setDateFilter(f as any)}
-            className={`px-6 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-500 ${dateFilter === f ? 'bg-emerald-600 text-white shadow-2xl shadow-emerald-200 scale-105 neon-border' : 'text-slate-500 hover:bg-emerald-50 border border-transparent'}`}
+            className={`px-3 sm:px-5 py-2 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${dateFilter === f ? 'bg-emerald-600 text-white shadow-lg scale-105' : 'text-slate-500 hover:bg-emerald-50'}`}
           >
             {lang === 'bn' ? (f === 'today' ? 'আজ' : f === '7days' ? '৭ দিন' : f === 'month' ? '১ মাস' : f === '6months' ? '৬ মাস' : f === '12months' ? '১২ মাস' : 'কাস্টম') : f}
           </button>
         ))}
       </div>
 
-      <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6">
+      <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-6">
         <KPICard title={t.sales} value={`৳${stats.totalSales.toLocaleString()}`} icon="fa-wallet" color="blue" />
         <KPICard title={t.purchase} value={`৳${stats.totalPurchase.toLocaleString()}`} icon="fa-cart-flatbed" color="orange" />
         <KPICard title={t.stockVal} value={`৳${stats.totalStockValue.toLocaleString()}`} icon="fa-boxes-stacked" color="indigo" />
@@ -238,16 +239,16 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
 
       {/* Low Stock Alerts */}
       {lowStockItems.length > 0 && (
-        <div className="bg-rose-50 border border-rose-100 p-6 rounded-[2.5rem] shadow-sm animate-pulse-slow">
-           <h3 className="font-black text-rose-700 text-sm uppercase tracking-widest flex items-center gap-3 mb-4">
+        <div className="bg-rose-50 border border-rose-100 p-4 sm:p-6 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm">
+           <h3 className="font-black text-rose-700 text-xs sm:text-sm uppercase tracking-widest flex items-center gap-3 mb-4">
              <i className="fas fa-triangle-exclamation animate-bounce"></i>
              {t.lowStock}
            </h3>
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
              {lowStockItems.map(p => (
-               <div key={p.id} className="bg-white p-4 rounded-2xl border border-rose-200 flex justify-between items-center shadow-sm">
-                  <span className="font-black text-slate-800 text-xs truncate mr-2">{p.name}</span>
-                  <span className="shrink-0 bg-rose-600 text-white px-3 py-1 rounded-full text-[10px] font-black">
+               <div key={p.id} className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-rose-200 flex justify-between items-center shadow-sm">
+                  <span className="font-black text-slate-800 text-[10px] sm:text-xs truncate mr-2">{p.name}</span>
+                  <span className="shrink-0 bg-rose-600 text-white px-2 sm:px-3 py-1 rounded-full text-[8px] sm:text-[10px] font-black">
                     {p.stock} {p.unit}
                   </span>
                </div>
@@ -256,34 +257,34 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         </div>
       )}
 
-      <div className="bg-white p-8 rounded-[3.5rem] shadow-sm border border-slate-100 relative overflow-hidden">
-        <div className="flex justify-between items-center mb-8">
-            <h3 className="font-black text-slate-900 text-sm uppercase tracking-[0.2em] flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100">
-                 <i className="fas fa-chart-pie text-indigo-600 text-sm"></i>
+      <div className="bg-white p-4 sm:p-8 rounded-[2rem] sm:rounded-[3.5rem] shadow-sm border border-slate-100 overflow-hidden">
+        <div className="flex justify-between items-center mb-6 sm:mb-8">
+            <h3 className="font-black text-slate-900 text-[10px] sm:text-sm uppercase tracking-[0.2em] flex items-center gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-indigo-50 flex items-center justify-center border border-indigo-100">
+                 <i className="fas fa-chart-pie text-indigo-600 text-xs sm:text-sm"></i>
               </div>
               {t.catPerformance}
             </h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-[10px] sm:text-xs">
             <thead className="bg-slate-50 text-slate-400 font-black uppercase tracking-[0.15em]">
               <tr>
-                <th className="px-6 py-4 rounded-l-3xl">{lang === 'bn' ? 'ক্যাটাগরি' : 'Category'}</th>
-                <th className="px-6 py-4 text-center">{lang === 'bn' ? 'স্টক পরিমাণ' : 'Stock Qty'}</th>
-                <th className="px-6 py-4 text-center">{lang === 'bn' ? 'স্টক ভ্যালু' : 'Stock Value'}</th>
-                <th className="px-6 py-4 text-center">{lang === 'bn' ? 'মোট বিক্রি' : 'Sales'}</th>
-                <th className="px-6 py-4 text-right rounded-r-3xl">{lang === 'bn' ? 'লাভ' : 'Profit'}</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 rounded-l-2xl sm:rounded-l-3xl">{lang === 'bn' ? 'ক্যাটাগরি' : 'Category'}</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-center">{lang === 'bn' ? 'স্টক পরিমাণ' : 'Stock Qty'}</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-center">{lang === 'bn' ? 'স্টক ভ্যালু' : 'Stock Value'}</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-center">{lang === 'bn' ? 'মোট বিক্রি' : 'Sales'}</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-right rounded-r-2xl sm:rounded-r-3xl">{lang === 'bn' ? 'লাভ' : 'Profit'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {catPerformance.map((p, idx) => (
                 <tr key={idx} className="hover:bg-indigo-50/20 transition-all group">
-                  <td className="px-6 py-5 font-black text-slate-800">{p.name}</td>
-                  <td className="px-6 py-5 text-center font-bold text-slate-500">{p.stock}</td>
-                  <td className="px-6 py-5 text-center font-black text-slate-700">৳{p.stockVal.toLocaleString()}</td>
-                  <td className="px-6 py-5 text-center font-black text-blue-600">৳{p.sales.toLocaleString()}</td>
-                  <td className="px-6 py-5 text-right font-black text-emerald-600">৳{p.profit.toLocaleString()}</td>
+                  <td className="px-4 sm:px-6 py-4 sm:py-5 font-black text-slate-800">{p.name}</td>
+                  <td className="px-4 sm:px-6 py-4 sm:py-5 text-center font-bold text-slate-500">{p.stock}</td>
+                  <td className="px-4 sm:px-6 py-4 sm:py-5 text-center font-black text-slate-700">৳{p.stockVal.toLocaleString()}</td>
+                  <td className="px-4 sm:px-6 py-4 sm:py-5 text-center font-black text-blue-600">৳{p.sales.toLocaleString()}</td>
+                  <td className="px-4 sm:px-6 py-4 sm:py-5 text-right font-black text-emerald-600">৳{p.profit.toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
@@ -295,13 +296,13 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
 };
 
 const CalendarCard = ({ label, date, icon, glow }: any) => (
-  <div className={`bg-slate-950 ${glow ? 'text-emerald-300 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'text-emerald-400/80 border-slate-800 shadow-xl'} px-6 py-4 rounded-[2.5rem] border-2 flex flex-col items-center justify-center min-w-[170px] min-h-[85px] transition-all hover:scale-105 group relative overflow-hidden`}>
+  <div className={`bg-slate-950 ${glow ? 'text-emerald-300 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'text-emerald-400/80 border-slate-800'} px-4 sm:px-6 py-3 sm:py-4 rounded-[1.5rem] sm:rounded-[2.5rem] border-2 flex flex-col items-center justify-center min-w-[140px] sm:min-w-[170px] min-h-[70px] sm:min-h-[85px] transition-all hover:scale-105 group relative overflow-hidden`}>
     <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-emerald-500/10 transition-all"></div>
-    <div className="flex items-center gap-2 mb-2 opacity-60">
-      <i className={`fas ${icon} text-[10px]`}></i>
-      <span className="text-[7px] font-black uppercase tracking-[0.3em]">{label}</span>
+    <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2 opacity-60">
+      <i className={`fas ${icon} text-[8px] sm:text-[10px]`}></i>
+      <span className="text-[6px] sm:text-[7px] font-black uppercase tracking-[0.3em]">{label}</span>
     </div>
-    <p className="text-[12px] font-black tracking-tighter text-center leading-tight whitespace-nowrap">{date}</p>
+    <p className="text-[10px] sm:text-[12px] font-black tracking-tighter text-center leading-tight whitespace-nowrap">{date}</p>
   </div>
 );
 
@@ -316,15 +317,15 @@ const KPICard = ({ title, value, icon, color }: any) => {
   };
   const [bg, text] = colorMap[color].split(' ');
   const valLen = value?.toString().length || 0;
-  let valFontSizeClass = valLen > 14 ? 'text-[12px]' : valLen > 11 ? 'text-sm' : 'text-base sm:text-lg';
+  let valFontSizeClass = valLen > 14 ? 'text-[10px]' : valLen > 11 ? 'text-[11px]' : 'text-xs sm:text-base';
 
   return (
-    <div className="bg-white p-3 sm:p-5 rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center gap-2 sm:gap-3 hover:shadow-2xl transition-all h-full min-h-[100px] min-w-0">
-      <div className={`w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-[1.2rem] sm:rounded-[1.4rem] flex items-center justify-center text-base sm:text-lg text-white shadow-2xl ${bg}`}>
+    <div className="bg-white p-3 sm:p-5 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-sm border border-slate-100 flex items-center gap-2 sm:gap-3 hover:shadow-2xl transition-all h-full min-h-[80px] sm:min-h-[100px] min-w-0">
+      <div className={`w-8 h-8 sm:w-11 sm:h-11 shrink-0 rounded-[1rem] sm:rounded-[1.4rem] flex items-center justify-center text-sm sm:text-lg text-white shadow-2xl ${bg}`}>
         <i className={`fas ${icon}`}></i>
       </div>
       <div className="min-w-0 flex-1 overflow-hidden">
-        <p className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-0.5 truncate">{title}</p>
+        <p className="text-[7px] sm:text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-0.5 truncate">{title}</p>
         <p className={`font-black tracking-tighter ${text} ${valFontSizeClass} break-all transition-all leading-tight`}>
           {value}
         </p>
