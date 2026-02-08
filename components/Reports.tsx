@@ -19,7 +19,9 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
 
   const [editingLog, setEditingLog] = useState<any | null>(null);
   const [editFormData, setEditFormData] = useState<any>({});
+  
   const filterSelectRef = useRef<HTMLSelectElement>(null);
+  const editFormRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -31,6 +33,55 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    const target = e.target as HTMLElement;
+    const isInput = target.tagName === 'INPUT';
+    const isSelect = target.tagName === 'SELECT';
+    const isButton = target.tagName === 'BUTTON';
+
+    const elements = Array.from(editFormRef.current?.elements || []).filter(el => {
+      const tag = (el as HTMLElement).tagName;
+      return (tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON') && !(el as any).disabled;
+    }) as HTMLElement[];
+    const index = elements.indexOf(target);
+
+    if (index === -1) return;
+
+    if (e.key === 'Enter') {
+      if (isButton && (target as HTMLButtonElement).type === 'submit') return;
+      e.preventDefault();
+      if (index < elements.length - 1) elements[index + 1].focus();
+    } else if (e.key === 'ArrowDown') {
+      if (isSelect) return;
+      e.preventDefault();
+      if (index < elements.length - 1) elements[index + 1].focus();
+    } else if (e.key === 'ArrowUp') {
+      if (isSelect) return;
+      e.preventDefault();
+      if (index > 0) elements[index - 1].focus();
+    } else if (e.key === 'ArrowRight') {
+      const isText = isInput && ['text', 'number', 'date'].includes((target as HTMLInputElement).type);
+      if (isText) {
+        const input = target as HTMLInputElement;
+        if (input.selectionStart !== input.value.length) return;
+      }
+      if (index < elements.length - 1) {
+        e.preventDefault();
+        elements[index + 1].focus();
+      }
+    } else if (e.key === 'ArrowLeft') {
+      const isText = isInput && ['text', 'number', 'date'].includes((target as HTMLInputElement).type);
+      if (isText) {
+        const input = target as HTMLInputElement;
+        if (input.selectionStart !== 0) return;
+      }
+      if (index > 0) {
+        e.preventDefault();
+        elements[index - 1].focus();
+      }
+    }
+  };
 
   const t = {
     filterTitle: lang === 'bn' ? 'রিপোর্ট ফিল্টার (Alt+S)' : 'Report Filters (Alt+S)',
@@ -48,7 +99,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
     buyLabel: lang === 'bn' ? 'কেনা' : 'Buy',
     sellLabel: lang === 'bn' ? 'বিক্রি' : 'Sell',
     print: lang === 'bn' ? 'প্রিন্ট / PDF ডাউনলোড' : 'Print / Download PDF',
-    party: lang === 'bn' ? 'ক্রেতা/সাপ্লায়ার' : 'Party Name',
+    party: lang === 'bn' ? 'ক্রেতা/সাপ্প্লাইয়ার' : 'Party Name',
     action: lang === 'bn' ? 'অ্যাকশন' : 'Action',
     editTitle: lang === 'bn' ? 'লেনদেন এডিট' : 'Edit Entry',
     cancel: lang === 'bn' ? 'বাতিল' : 'Cancel',
@@ -221,7 +272,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
             <h3 className="text-xl font-black text-emerald-900 mb-6 flex items-center gap-2 border-b border-gray-100 pb-4">
                <i className="fas fa-file-pen text-emerald-600"></i> {t.editTitle}
             </h3>
-            <form onSubmit={handleEditSubmit} className="space-y-4">
+            <form ref={editFormRef} onKeyDown={handleKeyDown} onSubmit={handleEditSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.date}</label>

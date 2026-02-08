@@ -37,19 +37,50 @@ const SSS: React.FC<SSSProps> = ({ data, onAdd, onUpdate, onDelete, lang }) => {
   });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    const target = e.target as HTMLElement;
+    const isInput = target.tagName === 'INPUT';
+    const isSelect = target.tagName === 'SELECT';
+    const isButton = target.tagName === 'BUTTON';
+
+    const elements = Array.from(formRef.current?.elements || []).filter(el => {
+      const tag = (el as HTMLElement).tagName;
+      return (tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON') && !(el as any).disabled;
+    }) as HTMLElement[];
+    const index = elements.indexOf(target);
+
+    if (index === -1) return;
+
     if (e.key === 'Enter') {
-      const elements = Array.from(formRef.current?.elements || []).filter(el => {
-        const tag = (el as HTMLElement).tagName;
-        return tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON';
-      }) as HTMLElement[];
-      
-      const index = elements.indexOf(e.target as any);
-      if (index > -1 && index < elements.length - 1) {
-        const currentEl = e.target as HTMLElement;
-        if (currentEl.tagName !== 'BUTTON' || (currentEl as HTMLButtonElement).type !== 'submit') {
-          e.preventDefault();
-          elements[index + 1].focus();
-        }
+      if (isButton && (target as HTMLButtonElement).type === 'submit') return;
+      e.preventDefault();
+      if (index < elements.length - 1) elements[index + 1].focus();
+    } else if (e.key === 'ArrowDown') {
+      if (isSelect) return;
+      e.preventDefault();
+      if (index < elements.length - 1) elements[index + 1].focus();
+    } else if (e.key === 'ArrowUp') {
+      if (isSelect) return;
+      e.preventDefault();
+      if (index > 0) elements[index - 1].focus();
+    } else if (e.key === 'ArrowRight') {
+      const isText = isInput && ['text', 'number', 'date'].includes((target as HTMLInputElement).type);
+      if (isText) {
+        const input = target as HTMLInputElement;
+        if (input.selectionStart !== input.value.length) return;
+      }
+      if (index < elements.length - 1) {
+        e.preventDefault();
+        elements[index + 1].focus();
+      }
+    } else if (e.key === 'ArrowLeft') {
+      const isText = isInput && ['text', 'number', 'date'].includes((target as HTMLInputElement).type);
+      if (isText) {
+        const input = target as HTMLInputElement;
+        if (input.selectionStart !== 0) return;
+      }
+      if (index > 0) {
+        e.preventDefault();
+        elements[index - 1].focus();
       }
     }
   };

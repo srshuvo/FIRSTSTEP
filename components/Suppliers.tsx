@@ -19,7 +19,9 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
   const [historySupplier, setHistorySupplier] = useState<Supplier | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [formData, setFormData] = useState({ name: '', phone: '' });
+  
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -31,6 +33,55 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    const target = e.target as HTMLElement;
+    const isInput = target.tagName === 'INPUT';
+    const isSelect = target.tagName === 'SELECT';
+    const isButton = target.tagName === 'BUTTON';
+
+    const elements = Array.from(formRef.current?.elements || []).filter(el => {
+      const tag = (el as HTMLElement).tagName;
+      return (tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON') && !(el as any).disabled;
+    }) as HTMLElement[];
+    const index = elements.indexOf(target);
+
+    if (index === -1) return;
+
+    if (e.key === 'Enter') {
+      if (isButton && (target as HTMLButtonElement).type === 'submit') return;
+      e.preventDefault();
+      if (index < elements.length - 1) elements[index + 1].focus();
+    } else if (e.key === 'ArrowDown') {
+      if (isSelect) return;
+      e.preventDefault();
+      if (index < elements.length - 1) elements[index + 1].focus();
+    } else if (e.key === 'ArrowUp') {
+      if (isSelect) return;
+      e.preventDefault();
+      if (index > 0) elements[index - 1].focus();
+    } else if (e.key === 'ArrowRight') {
+      const isText = isInput && ['text', 'number', 'date'].includes((target as HTMLInputElement).type);
+      if (isText) {
+        const input = target as HTMLInputElement;
+        if (input.selectionStart !== input.value.length) return;
+      }
+      if (index < elements.length - 1) {
+        e.preventDefault();
+        elements[index + 1].focus();
+      }
+    } else if (e.key === 'ArrowLeft') {
+      const isText = isInput && ['text', 'number', 'date'].includes((target as HTMLInputElement).type);
+      if (isText) {
+        const input = target as HTMLInputElement;
+        if (input.selectionStart !== 0) return;
+      }
+      if (index > 0) {
+        e.preventDefault();
+        elements[index - 1].focus();
+      }
+    }
+  };
 
   const t = {
     title: lang === 'bn' ? 'সাপ্লায়ার খাতা' : 'Supplier Directory',
@@ -113,7 +164,7 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
 
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
-          <form onSubmit={handleSubmit} className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md space-y-6 animate-scale-in">
+          <form ref={formRef} onKeyDown={handleKeyDown} onSubmit={handleSubmit} className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md space-y-6 animate-scale-in">
              <div className="flex justify-between items-center border-b border-gray-50 pb-4">
                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">{editingSupplier ? t.editTitle : t.addTitle}</h3>
                 <button type="button" onClick={() => setShowModal(false)} className="text-gray-300 hover:text-rose-600 transition"><i className="fas fa-circle-xmark text-xl"></i></button>
