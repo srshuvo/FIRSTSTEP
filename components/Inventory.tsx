@@ -204,14 +204,14 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-area">
-          <div className="hidden print:block p-4 sm:p-8 text-center border-b-2 border-emerald-500 bg-emerald-50/20">
-             <h2 className="text-2xl sm:text-3xl font-black text-emerald-900">FIRST STEP - STOCK REPORT</h2>
+          <div className="hidden print:block p-4 sm:p-6 text-center border-b-2 border-emerald-500 bg-emerald-50/10">
+             <h2 className="text-2xl sm:text-3xl font-black text-emerald-900 tracking-tighter">FIRST STEP - STOCK REPORT</h2>
              <p className="text-[10px] sm:text-xs font-bold text-emerald-600 mt-1 uppercase tracking-[0.2em]">
-                {selectedCatId === 'all' ? (lang === 'bn' ? 'সকল পণ্যের খতিয়ান' : 'Full Stock Inventory') : (lang === 'bn' ? `ক্যাটাগরি: ${getCatSummary(selectedCatId).count} পণ্য` : `Category View`)}
+                {selectedCatId === 'all' ? (lang === 'bn' ? 'সকল পণ্যের খতিয়ান' : 'Full Stock Inventory') : (lang === 'bn' ? `ক্যাটাগরি রিপোর্ট` : `Category Stock Report`)}
              </p>
-             <div className="flex justify-center gap-4 sm:gap-6 mt-3 sm:mt-4 text-[10px] sm:text-xs font-black">
-                <span className="bg-white px-4 py-1 rounded-full border">Total Units: {currentStockStats.totalStock}</span>
-                <span className="bg-white px-4 py-1 rounded-full border text-emerald-700">Total Value: ৳{currentStockStats.totalVal.toLocaleString()}</span>
+             <div className="flex justify-center gap-4 sm:gap-6 mt-3 text-[10px] font-black">
+                <span className="border-r pr-4">Units: {currentStockStats.totalStock}</span>
+                <span>Value: ৳{currentStockStats.totalVal.toLocaleString()}</span>
              </div>
           </div>
 
@@ -228,23 +228,22 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredProducts.map(p => (
-                <tr key={p.id} className="hover:bg-emerald-50/20 transition-colors">
-                  <td className="px-4 sm:px-6 py-3 sm:py-4">
+                <tr key={p.id} className="hover:bg-emerald-50/10 transition-colors">
+                  <td className="px-4 sm:px-6 py-2.5 sm:py-4">
                     <p className="font-black text-gray-800 leading-tight text-xs sm:text-sm">{p.name}</p>
-                    <p className="text-[8px] sm:text-[10px] font-bold text-emerald-600 mt-0.5 sm:mt-1 uppercase tracking-tighter">
-                      <i className="fas fa-hashtag mr-1 opacity-50"></i>
+                    <p className="text-[8px] sm:text-[9px] font-bold text-emerald-600 mt-0.5 uppercase tracking-tighter">
                       {p.categoryId ? data.categories.find(c => c.id === p.categoryId)?.name : (lang === 'bn' ? 'ক্যাটাগরি ছাড়া' : 'Uncategorized')}
                     </p>
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4">
-                    <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full font-black text-[10px] sm:text-xs border ${p.stock <= (p.lowStockThreshold || 10) ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-gray-50 text-gray-700 border-gray-100'}`}>
+                  <td className="px-4 sm:px-6 py-2.5 sm:py-4">
+                    <span className={`px-2 py-0.5 rounded-full font-black text-[10px] sm:text-xs border ${p.stock <= (p.lowStockThreshold || 10) ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-gray-50 text-gray-700 border-gray-100'}`}>
                       {p.stock} {p.unit}
                     </span>
                   </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-400 font-bold text-[10px] sm:text-xs">৳{p.costPrice.toLocaleString()}</td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 font-black text-slate-700 text-[10px] sm:text-xs">৳{(p.stock * p.costPrice).toLocaleString()}</td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 font-black text-emerald-600 text-[10px] sm:text-xs">৳{p.salePrice.toLocaleString()}</td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-center no-print">
+                  <td className="px-4 sm:px-6 py-2.5 sm:py-4 text-gray-400 font-bold text-[10px] sm:text-xs">৳{p.costPrice.toLocaleString()}</td>
+                  <td className="px-4 sm:px-6 py-2.5 sm:py-4 font-black text-slate-700 text-[10px] sm:text-xs">৳{(p.stock * p.costPrice).toLocaleString()}</td>
+                  <td className="px-4 sm:px-6 py-2.5 sm:py-4 font-black text-emerald-600 text-[10px] sm:text-xs">৳{p.salePrice.toLocaleString()}</td>
+                  <td className="px-4 sm:px-6 py-2.5 sm:py-4 text-center no-print">
                     <div className="flex justify-center gap-1">
                       <button onClick={() => { setEditing(p); setFormData({ ...p, categoryId: p.categoryId || '', lowStockThreshold: p.lowStockThreshold || 10 }); setShowModal(true); }} className="text-blue-500 p-2 hover:bg-blue-50 rounded-lg"><i className="fas fa-edit"></i></button>
                       <button onClick={() => setConfirmDelete({ id: p.id, name: p.name, type: 'product' })} className="text-red-500 p-2 hover:bg-red-50 rounded-lg"><i className="fas fa-trash-can"></i></button>
@@ -253,10 +252,11 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
                 </tr>
               ))}
             </tbody>
-            <tfoot className="bg-gray-50 border-t-2 border-gray-100 font-black">
+            {/* The tfoot is configured via CSS to only appear at the very end on print */}
+            <tfoot className="border-t-2 border-emerald-600 bg-gray-50 font-black">
                 <tr>
-                    <td colSpan={3} className="px-4 sm:px-6 py-3 sm:py-4 text-[9px] sm:text-[10px] uppercase text-gray-400">{lang === 'bn' ? 'মোট ভ্যালু:' : 'Grand Total:'}</td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-lg text-emerald-700">৳{currentStockStats.totalVal.toLocaleString()}</td>
+                    <td colSpan={3} className="px-4 sm:px-6 py-3 sm:py-4 text-[9px] sm:text-[10px] uppercase text-gray-400 font-black">{lang === 'bn' ? 'মোট ভ্যালু (Grand Total):' : 'Grand Total:'}</td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base text-emerald-800">৳{currentStockStats.totalVal.toLocaleString()}</td>
                     <td colSpan={2} className="no-print"></td>
                 </tr>
             </tfoot>
