@@ -27,9 +27,20 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
   const t = {
     title: lang === 'bn' ? 'ক্রেতা তালিকা (Customer List)' : 'Customer List',
-    search: lang === 'bn' ? 'নাম বা ফোন দিয়ে খুঁজুন...' : 'Search Ledger...',
+    search: lang === 'bn' ? 'নাম বা ফোন দিয়ে খুঁজুন... (Alt+S)' : 'Search Ledger... (Alt+S)',
     newBtn: lang === 'bn' ? 'নতুন ক্রেতা' : 'New Customer',
     totalDue: lang === 'bn' ? 'মোট পাওনা (বাকি)' : 'Total Receivable',
     totalAdvance: lang === 'bn' ? 'মোট অগ্রিম (জমা)' : 'Total Advance',
@@ -84,20 +95,20 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
             onChange={e => setSearchTerm(e.target.value)} 
           />
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex gap-2 w-full md:w-auto no-print">
           <button onClick={() => window.print()} className="flex-1 bg-emerald-50 text-emerald-600 px-5 py-3 rounded-2xl font-black flex items-center justify-center gap-2 border border-emerald-100 hover:bg-emerald-600 hover:text-white transition"><i className="fas fa-print"></i> {t.printBtn}</button>
           <button onClick={() => { setEditingCustomer(null); setShowModal(true); }} className="flex-1 bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black flex items-center justify-center gap-2 shadow-xl hover:bg-emerald-700 transition uppercase text-xs tracking-widest">{t.newBtn}</button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 no-print">
-          <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-center">
-              <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{t.totalDue}</p>
-              <p className="text-base font-black text-rose-600">৳{stats.totalDue.toLocaleString()}</p>
+          <div className="bg-white p-2 sm:p-3 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-center">
+              <p className="text-[7px] sm:text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{t.totalDue}</p>
+              <p className="text-sm sm:text-base font-black text-rose-600">৳{stats.totalDue.toLocaleString()}</p>
           </div>
-          <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-center">
-              <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{t.totalAdvance}</p>
-              <p className="text-base font-black text-emerald-600">৳{stats.totalAdvance.toLocaleString()}</p>
+          <div className="bg-white p-2 sm:p-3 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-center">
+              <p className="text-[7px] sm:text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{t.totalAdvance}</p>
+              <p className="text-sm sm:text-base font-black text-emerald-600">৳{stats.totalAdvance.toLocaleString()}</p>
           </div>
       </div>
 

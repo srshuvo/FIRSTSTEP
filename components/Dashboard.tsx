@@ -17,6 +17,23 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
     return () => clearInterval(timer);
   }, []);
 
+  // Listen for Alt+S and just flash the filter bar if no search input exists
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        // Just as a UI hint for pages without search
+        const filterBar = document.getElementById('dashboard-filters');
+        if (filterBar) {
+          filterBar.classList.add('ring-2', 'ring-emerald-500');
+          setTimeout(() => filterBar.classList.remove('ring-2', 'ring-emerald-500'), 1000);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
   const todayStr = new Date().toISOString().split('T')[0];
 
   const getFilteredLogs = (logs: any[]) => {
@@ -212,7 +229,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         </div>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-md p-2 rounded-3xl shadow-sm border border-slate-100 flex flex-wrap gap-1 sm:gap-2 items-center no-print sticky top-4 z-20">
+      <div id="dashboard-filters" className="bg-white/80 backdrop-blur-md p-2 rounded-3xl shadow-sm border border-slate-100 flex flex-wrap gap-1 sm:gap-2 items-center no-print sticky top-4 z-20 transition-all">
         <div className="flex items-center gap-2 px-4 py-2 bg-slate-950 rounded-full border border-slate-800">
            <i className="fas fa-microchip text-emerald-500 text-[8px] sm:text-[10px] animate-pulse"></i>
            <span className="text-[8px] sm:text-[10px] font-black uppercase text-emerald-500 tracking-[0.2em]">Filters</span>

@@ -19,6 +19,17 @@ const SSS: React.FC<SSSProps> = ({ data, onAdd, onUpdate, onDelete, lang }) => {
   const formRef = useRef<HTMLFormElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
   const t = {
     title: lang === 'bn' ? 'অনন্যা ব্যায় খতিয়ান (Expense Ledger)' : 'Expense Ledger',
     newBtn: lang === 'bn' ? 'নতুন এন্ট্রি' : 'New Entry',
@@ -60,7 +71,7 @@ const SSS: React.FC<SSSProps> = ({ data, onAdd, onUpdate, onDelete, lang }) => {
            <h2 className="text-2xl font-black text-slate-900">{t.title}</h2>
            <p className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-widest">{lang === 'bn' ? 'ব্যক্তিগত বা অতিরিক্ত খরচ' : 'General Expenses'}</p>
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex gap-2 w-full md:w-auto no-print">
           <button onClick={() => window.print()} className="px-5 py-3 bg-emerald-50 text-emerald-600 rounded-2xl font-black uppercase text-xs tracking-widest border border-emerald-100 transition"><i className="fas fa-print mr-2"></i> {t.printBtn}</button>
           <button onClick={() => { setEditingEntry(null); setShowModal(true); }} className="px-6 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl transition active:scale-95">{t.newBtn}</button>
         </div>

@@ -19,9 +19,20 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
   const t = {
     title: lang === 'bn' ? 'সাপ্লায়ার তালিকা (Supplier List)' : 'Supplier List',
-    search: lang === 'bn' ? 'নাম বা ফোন দিয়ে খুঁজুন...' : 'Search Suppliers...',
+    search: lang === 'bn' ? 'নাম বা ফোন দিয়ে খুঁজুন... (Alt+S)' : 'Search Suppliers... (Alt+S)',
     newBtn: lang === 'bn' ? 'নতুন সাপ্লায়ার' : 'New Vendor',
     name: lang === 'bn' ? 'নাম' : 'Name',
     phone: lang === 'bn' ? 'ফোন' : 'Phone',
@@ -59,7 +70,7 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
             onChange={e => setSearchTerm(e.target.value)} 
           />
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex gap-2 w-full md:w-auto no-print">
           <button onClick={() => window.print()} className="flex-1 bg-emerald-50 text-emerald-600 px-5 py-3 rounded-2xl font-black flex items-center justify-center gap-2 border border-emerald-100 hover:bg-emerald-600 hover:text-white transition"><i className="fas fa-print"></i> {t.printBtn}</button>
           <button onClick={() => { setEditingSupplier(null); setShowModal(true); }} className="flex-1 bg-slate-900 text-white px-6 py-3 rounded-2xl font-black flex items-center justify-center gap-2 shadow-xl hover:bg-black transition uppercase text-xs tracking-widest">{t.newBtn}</button>
         </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { AppData, StockOut } from '../types';
 
@@ -10,11 +11,23 @@ interface SalesProps {
 const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const formRef = useRef<HTMLFormElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     productId: '', customerId: '', quantity: 0, unitPrice: 0, discount: 0, paidAmount: 0,
     billNumber: `BILL-${Date.now().toString().slice(-6)}`,
     date: new Date().toISOString().split('T')[0], isSample: false
   });
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   const filteredProducts = useMemo(() => {
     return data.products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase().trim())).sort((a, b) => a.name.localeCompare(b.name));
@@ -56,26 +69,6 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
       if (isSelect) return;
       e.preventDefault();
       if (index > 0) elements[index - 1].focus();
-    } else if (e.key === 'ArrowRight') {
-      const isText = isInput && ['text', 'number', 'date'].includes((target as HTMLInputElement).type);
-      if (isText) {
-        const input = target as HTMLInputElement;
-        if (input.selectionStart !== input.value.length) return;
-      }
-      if (index < elements.length - 1) {
-        e.preventDefault();
-        elements[index + 1].focus();
-      }
-    } else if (e.key === 'ArrowLeft') {
-      const isText = isInput && ['text', 'number', 'date'].includes((target as HTMLInputElement).type);
-      if (isText) {
-        const input = target as HTMLInputElement;
-        if (input.selectionStart !== 0) return;
-      }
-      if (index > 0) {
-        e.preventDefault();
-        elements[index - 1].focus();
-      }
     }
   };
 
@@ -98,8 +91,8 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
         <h3 className="text-xl font-black text-emerald-600 flex items-center gap-2"><i className="fas fa-file-invoice-dollar"></i> {lang === 'bn' ? 'মাল বিক্রি (Sales)' : 'Sales Entry'}</h3>
         <form ref={formRef} onKeyDown={handleKeyDown} onSubmit={handleSubmit} className="space-y-4">
           <div className="p-4 bg-gray-50 rounded-xl space-y-4">
-            <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'মালের নাম দিয়ে খুঁজুন...' : 'Search by product...'}</label>
-            <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full border p-3 rounded-xl font-bold bg-white outline-none focus:ring-2 focus:ring-emerald-500" placeholder={lang === 'bn' ? 'মালের নাম দিয়ে খুঁজুন...' : 'Search...'} />
+            <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'মালের নাম দিয়ে খুঁজুন... (Alt+S)' : 'Search by product... (Alt+S)'}</label>
+            <input ref={searchInputRef} type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full border p-3 rounded-xl font-bold bg-white outline-none focus:ring-2 focus:ring-emerald-500" placeholder={lang === 'bn' ? 'মালের নাম দিয়ে খুঁজুন...' : 'Search...'} />
             
             <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'পণ্য নির্বাচন করুন' : 'Select Product'}</label>
             <select required value={formData.productId} onChange={e => { const p = data.products.find(prod => prod.id === e.target.value); setFormData({...formData, productId: e.target.value, unitPrice: p?.salePrice || 0}); }} className="w-full border p-3 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500">

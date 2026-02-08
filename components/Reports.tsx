@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AppData, StockIn, StockOut } from '../types';
 
@@ -60,26 +61,6 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
       if (isSelect) return;
       e.preventDefault();
       if (index > 0) elements[index - 1].focus();
-    } else if (e.key === 'ArrowRight') {
-      const isText = isInput && ['text', 'number', 'date'].includes((target as HTMLInputElement).type);
-      if (isText) {
-        const input = target as HTMLInputElement;
-        if (input.selectionStart !== input.value.length) return;
-      }
-      if (index < elements.length - 1) {
-        e.preventDefault();
-        elements[index + 1].focus();
-      }
-    } else if (e.key === 'ArrowLeft') {
-      const isText = isInput && ['text', 'number', 'date'].includes((target as HTMLInputElement).type);
-      if (isText) {
-        const input = target as HTMLInputElement;
-        if (input.selectionStart !== 0) return;
-      }
-      if (index > 0) {
-        e.preventDefault();
-        elements[index - 1].focus();
-      }
     }
   };
 
@@ -194,18 +175,10 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-area">
-        <div className="hidden print:block p-10 text-center border-b-4 border-emerald-600 mb-6 bg-emerald-50/30">
-           <h1 className="text-5xl font-black text-emerald-900 tracking-tighter">FIRST STEP</h1>
-           <p className="text-sm font-black text-emerald-600 uppercase tracking-[0.3em] mt-2">{t.reportSubtitle}</p>
-           <div className="flex justify-center gap-10 mt-6 text-sm font-bold text-gray-700">
-              <span className="bg-white px-4 py-1 rounded-full border border-gray-200">{t.start}: {filter.startDate}</span>
-              <span className="bg-white px-4 py-1 rounded-full border border-gray-200">{t.end}: {filter.endDate}</span>
-           </div>
-        </div>
-
-        <div className="p-5 bg-gray-50 border-b border-gray-100 flex justify-between items-center no-print">
-          <h3 className="font-black text-gray-700 uppercase text-xs tracking-widest">{t.history}</h3>
-          <span className="text-[10px] bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-black uppercase tracking-wider">{filteredLogs.length} Records</span>
+        <div className="hidden print:block p-8 text-center border-b-2 border-emerald-500 bg-emerald-50/10">
+           <h2 className="text-2xl font-black text-emerald-900 tracking-tighter uppercase">FIRST STEP - {t.history}</h2>
+           <p className="text-[10px] font-bold text-gray-500 mt-1">{new Date().toLocaleDateString()}</p>
+           <div className="w-16 h-1 bg-emerald-500 mx-auto mt-2 rounded-full"></div>
         </div>
         
         <div className="overflow-x-auto">
@@ -253,16 +226,6 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
                <p className="text-gray-400 font-black italic">{lang === 'bn' ? 'কোনো ডাটা পাওয়া যায়নি' : 'No transaction data available'}</p>
             </div>
           )}
-        </div>
-
-        <div className="hidden print:block p-8 bg-gray-50 border-t-2 border-emerald-100">
-            <div className="flex justify-between items-center">
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest italic">Generated via FIRST STEP Digital Khata System</p>
-                <div className="text-right">
-                    <p className="text-sm font-black text-gray-800 uppercase">{lang === 'bn' ? 'মোট লেনদেন' : 'Total Transactions'}: {filteredLogs.length}</p>
-                    <p className="text-[9px] text-gray-400 mt-1">{new Date().toLocaleString()}</p>
-                </div>
-            </div>
         </div>
       </div>
 
