@@ -149,25 +149,25 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                 </tr>
               ))}
             </tbody>
-            {/* Redesigned Footer for the Customer Print List */}
-            <tfoot className="border-t-4 border-black bg-gray-100 font-black">
+            {/* Table Footer: Clearly displays the grand totals summary for print as requested */}
+            <tfoot className="border-t-4 border-black bg-gray-100 font-black print-total-row">
                 <tr>
-                    <td colSpan={2} className="px-6 py-8 text-sm font-black uppercase text-gray-700">
+                    <td colSpan={2} className="px-6 py-10 text-sm font-black uppercase text-gray-800 align-top">
                         {lang === 'bn' ? 'সর্বমোট হিসাব' : 'Grand Totals Summary'}
                     </td>
-                    <td className="px-6 py-8 text-right">
-                        <div className="flex flex-col items-end space-y-3">
-                           <div className="flex gap-8 items-center bg-white px-4 py-2 rounded-lg border border-gray-200">
-                               <span className="text-[10px] font-black uppercase text-gray-500 tracking-widest">
-                                  {t.totalDue}:
+                    <td className="px-6 py-10 text-right">
+                        <div className="flex flex-col items-end space-y-4">
+                           <div className="flex flex-col items-end">
+                               <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em] mb-1">
+                                  {lang === 'bn' ? 'মোট পাওনা (বাকি):' : 'Total Due (Receivable):'}
                                </span>
-                               <span className="text-lg font-black text-rose-600 leading-none">৳{stats.totalDue.toLocaleString()}</span>
+                               <span className="text-2xl font-black text-rose-600 leading-none">৳{stats.totalDue.toLocaleString()}</span>
                            </div>
-                           <div className="flex gap-8 items-center bg-white px-4 py-2 rounded-lg border border-gray-200">
-                               <span className="text-[10px] font-black uppercase text-gray-500 tracking-widest">
-                                  {t.totalAdvance}:
+                           <div className="flex flex-col items-end">
+                               <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em] mb-1">
+                                  {lang === 'bn' ? 'মোট অগ্রিম (জমা):' : 'Total Advance:'}
                                </span>
-                               <span className="text-lg font-black text-emerald-700 leading-none">৳{stats.totalAdvance.toLocaleString()}</span>
+                               <span className="text-2xl font-black text-emerald-700 leading-none">৳{stats.totalAdvance.toLocaleString()}</span>
                            </div>
                         </div>
                     </td>
