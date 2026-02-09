@@ -215,7 +215,6 @@ const App: React.FC = () => {
       stockInLogs: [log, ...prev.stockInLogs],
       products: prev.products.map(p => {
         if (p.id === log.productId) {
-          // Weighted average price calculation + Rounding UP as requested
           const currentTotalValue = (p.stock * p.costPrice);
           const newEntryValue = (log.quantity * log.unitPrice);
           const newTotalStock = p.stock + log.quantity;
@@ -258,6 +257,15 @@ const App: React.FC = () => {
       stockOutLogs: [log, ...prev.stockOutLogs],
       products: prev.products.map(p => p.id === log.productId ? { ...p, stock: p.stock - log.quantity } : p),
       customers: prev.customers.map(c => c.id === log.customerId ? { ...c, dueAmount: c.dueAmount + log.dueAdded } : c)
+    }));
+  };
+
+  const recordSalesReturn = (log: StockOut) => {
+    setData(prev => ({
+      ...prev,
+      stockOutLogs: [log, ...prev.stockOutLogs],
+      products: prev.products.map(p => p.id === log.productId ? { ...p, stock: p.stock + log.quantity } : p),
+      customers: prev.customers.map(c => c.id === log.customerId ? { ...c, dueAmount: c.dueAmount - log.totalPrice } : c)
     }));
   };
 
@@ -408,6 +416,7 @@ const App: React.FC = () => {
               onUpdate={updateCustomer} 
               onDelete={deleteCustomer} 
               onPay={handlePaymentRecord}
+              onRecordReturn={recordSalesReturn}
               onDeleteLog={deleteStockOut}
               onUpdateLog={updateStockOut}
               onDeletePayment={deletePayment}

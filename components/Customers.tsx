@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { AppData, Customer, PaymentLog, StockOut } from '../types';
+import { AppData, Customer, PaymentLog, StockOut, Product } from '../types';
 
 interface CustomersProps {
   data: AppData;
@@ -8,6 +8,7 @@ interface CustomersProps {
   onUpdate: (c: Customer) => void;
   onDelete: (id: string) => void;
   onPay: (log: PaymentLog) => void;
+  onRecordReturn: (log: StockOut) => void;
   onDeleteLog: (id: string) => void;
   onUpdateLog: (log: StockOut) => void;
   onDeletePayment: (id: string) => void;
@@ -15,15 +16,25 @@ interface CustomersProps {
   lang: 'bn' | 'en';
 }
 
-const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, onPay, onDeleteLog, onUpdateLog, onDeletePayment, onUpdatePayment, lang }) => {
+const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, onPay, onRecordReturn, onDeleteLog, onUpdateLog, onDeletePayment, onUpdatePayment, lang }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [payingCustomer, setPayingCustomer] = useState<Customer | null>(null);
+  const [returningCustomer, setReturningCustomer] = useState<Customer | null>(null);
   const [historyCustomer, setHistoryCustomer] = useState<Customer | null>(null);
   
+  const [returnSearchTerm, setReturnSearchTerm] = useState('');
+  const [returnFormData, setReturnFormData] = useState({
+    productId: '',
+    quantity: 0,
+    unitPrice: 0,
+    date: new Date().toISOString().split('T')[0]
+  });
+
   const searchInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -51,11 +62,15 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
     addTitle: lang === 'bn' ? 'নতুন ক্রেতা যোগ' : 'Add Customer',
     editTitle: lang === 'bn' ? 'প্রোফাইল আপডেট' : 'Update Profile',
     payTitle: lang === 'bn' ? 'পেমেন্ট সংগ্রহ' : 'Collect Payment',
+    returnTitle: lang === 'bn' ? 'বিক্রয় ফেরত (Return)' : 'Sales Return',
     cancel: lang === 'bn' ? 'বাতিল' : 'Cancel',
     save: lang === 'bn' ? 'সেভ' : 'Save',
     printBtn: lang === 'bn' ? 'রিপোর্ট প্রিন্ট' : 'Print',
     dueLabel: lang === 'bn' ? 'বাকি' : 'Due',
-    advanceLabel: lang === 'bn' ? 'অগ্রিম' : 'Advance'
+    advanceLabel: lang === 'bn' ? 'অগ্রিম' : 'Advance',
+    productSearch: lang === 'bn' ? 'পণ্য খুঁজুন' : 'Search Product',
+    qty: lang === 'bn' ? 'পরিমাণ' : 'Quantity',
+    price: lang === 'bn' ? 'মূল্য' : 'Price'
   };
 
   const filtered = data.customers.filter(c => 
@@ -80,6 +95,41 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
     else onAdd({ id: Math.random().toString(36).substr(2, 9), ...payload });
     setShowModal(false);
   };
+
+  const handleReturnSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!returningCustomer || !returnFormData.productId || returnFormData.quantity <= 0) return;
+    const prod = data.products.find(p => p.id === returnFormData.productId);
+    if (!prod) return;
+
+    const totalValue = returnFormData.quantity * returnFormData.unitPrice;
+    
+    onRecordReturn({
+      id: Math.random().toString(36).substr(2, 9),
+      billNumber: `RET-${Date.now().toString().slice(-6)}`,
+      productId: returnFormData.productId,
+      productName: prod.name,
+      productUnit: prod.unit,
+      customerId: returningCustomer.id,
+      quantity: returnFormData.quantity,
+      unitPrice: returnFormData.unitPrice,
+      discount: 0,
+      totalPrice: totalValue,
+      paidAmount: 0,
+      dueAdded: -totalValue,
+      date: returnFormData.date
+    });
+
+    alert(lang === 'bn' ? "ফেরত গ্রহণ সম্পন্ন!" : "Return Processed!");
+    setShowReturnModal(false);
+    setReturningCustomer(null);
+    setReturnFormData({ productId: '', quantity: 0, unitPrice: 0, date: new Date().toISOString().split('T')[0] });
+    setReturnSearchTerm('');
+  };
+
+  const returnFilteredProducts = useMemo(() => {
+    return data.products.filter(p => p.name.toLowerCase().includes(returnSearchTerm.toLowerCase())).sort((a,b) => a.name.localeCompare(b.name));
+  }, [data.products, returnSearchTerm]);
 
   return (
     <div className="space-y-6">
@@ -142,6 +192,7 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                   </td>
                   <td className="px-6 py-4 text-center no-print">
                     <div className="flex justify-center gap-1">
+                      <button onClick={() => { setReturningCustomer(c); setShowReturnModal(true); }} className="p-2 text-orange-500 hover:bg-orange-50 rounded-lg" title={t.returnTitle}><i className="fas fa-rotate-left"></i></button>
                       <button onClick={() => { setEditingCustomer(c); setShowModal(true); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><i className="fas fa-edit"></i></button>
                       <button onClick={() => { if(confirm(lang === 'bn' ? 'মুছে ফেলতে চান?' : 'Delete?')) onDelete(c.id) }} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg"><i className="fas fa-trash-can"></i></button>
                     </div>
@@ -149,25 +200,25 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                 </tr>
               ))}
             </tbody>
-            {/* Table Footer: ক্রেতা তালিকার শেষে হিসাবের অংশ */}
+            {/* Optimized Print Footer: Smaller font and padding as requested */}
             <tfoot className="border-t-4 border-black bg-gray-50 font-black print-total-row">
                 <tr>
-                    <td colSpan={2} className="px-6 py-10 text-[9px] font-black uppercase text-gray-600 align-top">
+                    <td colSpan={2} className="px-4 py-4 text-[8px] font-black uppercase text-gray-500 align-top">
                         {lang === 'bn' ? 'সর্বমোট হিসাব' : 'Grand Totals Summary'}
                     </td>
-                    <td className="px-6 py-10 text-right">
-                        <div className="flex flex-col items-end space-y-5">
+                    <td className="px-4 py-4 text-right">
+                        <div className="flex flex-col items-end space-y-2">
                            <div className="flex flex-col items-end">
-                               <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] mb-1">
+                               <span className="text-[8px] font-black uppercase text-gray-400 tracking-widest mb-0.5">
                                   {lang === 'bn' ? 'মোট পাওনা (বাকি):' : 'Total Due (Receivable):'}
                                </span>
-                               <span className="text-2xl font-black text-rose-600 leading-none">৳{stats.totalDue.toLocaleString()}</span>
+                               <span className="text-lg font-black text-rose-600 leading-none">৳{stats.totalDue.toLocaleString()}</span>
                            </div>
                            <div className="flex flex-col items-end">
-                               <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] mb-1">
+                               <span className="text-[8px] font-black uppercase text-gray-400 tracking-widest mb-0.5">
                                   {lang === 'bn' ? 'মোট অগ্রিম (জমা):' : 'Total Advance:'}
                                </span>
-                               <span className="text-2xl font-black text-emerald-700 leading-none">৳{stats.totalAdvance.toLocaleString()}</span>
+                               <span className="text-lg font-black text-emerald-700 leading-none">৳{stats.totalAdvance.toLocaleString()}</span>
                            </div>
                         </div>
                     </td>
@@ -190,6 +241,48 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
              <div className="flex gap-4 pt-4">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 bg-gray-100 rounded-2xl font-black uppercase text-xs">{t.cancel}</button>
                 <button type="submit" className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs shadow-xl">{t.save}</button>
+             </div>
+          </form>
+        </div>
+      )}
+
+      {showReturnModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
+          <form onSubmit={handleReturnSubmit} className="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-md space-y-6 animate-scale-in">
+             <div className="flex justify-between items-center border-b pb-4">
+               <h3 className="text-xl font-black text-orange-600">{t.returnTitle}</h3>
+               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{returningCustomer?.name}</span>
+             </div>
+             <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-emerald-600 uppercase ml-1">{t.productSearch}</label>
+                  <input type="text" placeholder={t.productSearch} value={returnSearchTerm} onChange={e => setReturnSearchTerm(e.target.value)} className="w-full p-3 bg-gray-50 border rounded-xl font-bold" />
+                </div>
+                <select required value={returnFormData.productId} onChange={e => {
+                  const p = data.products.find(prod => prod.id === e.target.value);
+                  setReturnFormData({...returnFormData, productId: e.target.value, unitPrice: p?.salePrice || 0});
+                }} className="w-full p-3 bg-gray-50 border rounded-xl font-bold">
+                  <option value="">-- {t.productSearch} --</option>
+                  {returnFilteredProducts.map(p => <option key={p.id} value={p.id}>{p.name} (Stock: {p.stock})</option>)}
+                </select>
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-1">
+                     <label className="text-[10px] font-black text-emerald-600 uppercase ml-1">{t.qty}</label>
+                     <input required type="number" placeholder={t.qty} value={returnFormData.quantity || ''} onChange={e => setReturnFormData({...returnFormData, quantity: Number(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-xl font-bold" />
+                   </div>
+                   <div className="space-y-1">
+                     <label className="text-[10px] font-black text-emerald-600 uppercase ml-1">{t.price}</label>
+                     <input required type="number" placeholder={t.price} value={returnFormData.unitPrice || ''} onChange={e => setReturnFormData({...returnFormData, unitPrice: Number(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-xl font-bold" />
+                   </div>
+                </div>
+                <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl flex justify-between items-center">
+                   <span className="text-xs font-black text-orange-700 uppercase">{lang === 'bn' ? 'ফেরত ভ্যালু:' : 'Return Total:'}</span>
+                   <span className="text-lg font-black text-orange-800">৳{(returnFormData.quantity * returnFormData.unitPrice).toLocaleString()}</span>
+                </div>
+             </div>
+             <div className="flex gap-4 pt-4">
+                <button type="button" onClick={() => setShowReturnModal(false)} className="flex-1 py-4 bg-gray-100 rounded-2xl font-black uppercase text-xs">{t.cancel}</button>
+                <button type="submit" className="flex-1 py-4 bg-orange-600 text-white rounded-2xl font-black uppercase text-xs shadow-xl">{t.save}</button>
              </div>
           </form>
         </div>
