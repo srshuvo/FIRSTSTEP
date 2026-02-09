@@ -82,12 +82,11 @@
           border-collapse: collapse !important; 
           table-layout: auto; 
           page-break-after: auto;
-          margin-bottom: 50px !important;
+          margin-bottom: 60px !important; /* অতিরিক্ত মার্জিন যাতে কাটা না পড়ে */
         }
         thead { display: table-header-group !important; }
-        /* tfoot is forced to appear at the end and formatted to prevent splitting */
         tfoot { 
-          display: table-row-group !important; 
+          display: table-row-group !important; /* সব পৃষ্ঠার শেষে দেখানোর জন্য */
           border-top: 3px solid #000 !important;
           page-break-inside: avoid !important;
         } 
@@ -113,7 +112,6 @@
         .rounded-2xl, .rounded-3xl, .rounded-xl { border-radius: 0 !important; }
         .shadow-sm, .shadow-md, .shadow-lg { box-shadow: none !important; }
         
-        /* Specific utility for grand totals in print */
         .print-total-row {
           background-color: #fafafa !important;
           -webkit-print-color-adjust: exact;
