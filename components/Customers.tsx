@@ -99,10 +99,12 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
     paid: lang === 'bn' ? 'পরিশোধ' : 'Paid'
   };
 
-  const filtered = data.customers.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.phone.includes(searchTerm)
-  );
+  const filtered = data.customers
+    .filter(c => 
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      c.phone.includes(searchTerm)
+    )
+    .sort((a, b) => a.name.localeCompare(b.name, 'bn'));
 
   const stats = useMemo(() => ({
     totalDue: data.customers.filter(c => c.dueAmount > 0).reduce((sum, c) => sum + c.dueAmount, 0),

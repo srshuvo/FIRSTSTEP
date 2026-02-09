@@ -72,13 +72,16 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
     history: lang === 'bn' ? 'লেনদেন হিস্টোরি' : 'Transaction History',
     date: lang === 'bn' ? 'তারিখ' : 'Date',
     type: lang === 'bn' ? 'ধরন' : 'Type',
-    product: lang === 'bn' ? 'পণ্য' : 'Product',
+    product: lang === 'bn' ? 'পণ্য / বিবরণ' : 'Product / Description',
     qty: lang === 'bn' ? 'পরিমাণ' : 'Qty',
-    total: lang === 'bn' ? 'মোট' : 'Total',
+    total: lang === 'bn' ? 'টাকার পরিমাণ' : 'Amount',
     discount: lang === 'bn' ? 'ছাড়' : 'Disc.',
     all: lang === 'bn' ? 'সব লেনদেন' : 'All Transactions',
-    buyLabel: lang === 'bn' ? 'কেনা' : 'Buy',
-    sellLabel: lang === 'bn' ? 'বিক্রি' : 'Sell',
+    buyLabel: lang === 'bn' ? 'কেনা' : 'Purchase',
+    sellLabel: lang === 'bn' ? 'বিক্রি' : 'Sale',
+    returnLabel: lang === 'bn' ? 'ফেরত' : 'Return',
+    paymentLabel: lang === 'bn' ? 'জমা / পেমেন্ট' : 'Payment',
+    expenseLabel: lang === 'bn' ? 'খরচ' : 'Expense',
     print: lang === 'bn' ? 'প্রিন্ট / PDF ডাউনলোড' : 'Print / Download PDF',
     party: lang === 'bn' ? 'ক্রেতা/সাপ্প্লাইয়ার' : 'Party Name',
     action: lang === 'bn' ? 'অ্যাকশন' : 'Action',
@@ -92,22 +95,62 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
 
   const filteredLogs = useMemo(() => {
     let combined: any[] = [];
+    
+    // Purchases
     if (filter.type === 'all' || filter.type === 'stockIn') {
       combined.push(...data.stockInLogs.map(l => ({ 
         ...l, 
         typeLabel: t.buyLabel, 
         type: 'stockIn',
+        colorClass: 'bg-indigo-100 text-indigo-700 border-indigo-200',
         partyName: data.suppliers.find(s => s.id === l.supplierId)?.name || 'N/A'
       })));
     }
+    
+    // Sales and Returns
     if (filter.type === 'all' || filter.type === 'stockOut') {
-      combined.push(...data.stockOutLogs.map(l => ({ 
-        ...l, 
-        typeLabel: t.sellLabel, 
-        type: 'stockOut',
+      combined.push(...data.stockOutLogs.map(l => {
+        const isReturn = l.billNumber?.startsWith('RET-') || l.dueAdded < 0;
+        return {
+          ...l,
+          typeLabel: isReturn ? t.returnLabel : t.sellLabel,
+          type: 'stockOut',
+          colorClass: isReturn ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200',
+          partyName: data.customers.find(c => c.id === l.customerId)?.name || 'N/A'
+        };
+      }));
+    }
+
+    // Payments
+    if (filter.type === 'all' || filter.type === 'payment') {
+      combined.push(...data.paymentLogs.map(l => ({
+        ...l,
+        typeLabel: t.paymentLabel,
+        type: 'payment',
+        productName: l.note || (lang === 'bn' ? 'পেমেন্ট রিসিভ' : 'Payment Received'),
+        productUnit: '',
+        quantity: '-',
+        totalPrice: l.amount,
+        colorClass: 'bg-amber-100 text-amber-700 border-amber-200',
         partyName: data.customers.find(c => c.id === l.customerId)?.name || 'N/A'
       })));
     }
+
+    // Expenses (Ledger Entries)
+    if ((filter.type === 'all' || filter.type === 'expense') && data.ledgerEntries) {
+      combined.push(...data.ledgerEntries.map(l => ({
+        ...l,
+        typeLabel: t.expenseLabel,
+        type: 'expense',
+        productName: l.description,
+        productUnit: '',
+        quantity: '-',
+        totalPrice: l.amount,
+        colorClass: 'bg-rose-100 text-rose-700 border-rose-200',
+        partyName: l.name || 'N/A'
+      })));
+    }
+
     return combined
       .filter(l => l.date >= filter.startDate && l.date <= filter.endDate)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -122,7 +165,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
     if (editingLog.type === 'stockIn') {
       const updated: StockIn = { ...editFormData, totalPrice: editFormData.quantity * editFormData.unitPrice };
       onUpdateStockIn(updated);
-    } else {
+    } else if (editingLog.type === 'stockOut') {
       const subtotal = editFormData.quantity * editFormData.unitPrice;
       const total = subtotal - (editFormData.discount || 0);
       const updated: StockOut = {
@@ -132,6 +175,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
       };
       onUpdateStockOut(updated);
     }
+    // Note: Inline editing for paymentLogs and ledgerEntries can be handled by their respective components
     setEditingLog(null);
   };
 
@@ -153,6 +197,8 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
               <option value="all">{t.all}</option>
               <option value="stockIn">{t.buyLabel}</option>
               <option value="stockOut">{t.sellLabel}</option>
+              <option value="payment">{t.paymentLabel}</option>
+              <option value="expense">{t.expenseLabel}</option>
             </select>
           </div>
           <div>
@@ -177,7 +223,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-area">
         <div className="hidden print:block p-8 text-center border-b-2 border-emerald-500 bg-emerald-50/10">
            <h2 className="text-2xl font-black text-emerald-900 tracking-tighter uppercase">FIRST STEP - {t.history}</h2>
-           <p className="text-[10px] font-bold text-gray-500 mt-1">{new Date().toLocaleDateString()}</p>
+           <p className="text-[10px] font-bold text-gray-500 mt-1">Report Generated: {new Date().toLocaleDateString()}</p>
            <div className="w-16 h-1 bg-emerald-500 mx-auto mt-2 rounded-full"></div>
         </div>
         
@@ -199,21 +245,34 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
                 <tr key={log.id} className="text-sm hover:bg-emerald-50/30 transition-colors">
                   <td className="p-4 whitespace-nowrap font-medium text-gray-600">{log.date}</td>
                   <td className="p-4">
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${log.type === 'stockIn' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${log.colorClass}`}>
                       {log.typeLabel}
                     </span>
                   </td>
                   <td className="p-4 font-bold text-gray-800">{log.partyName}</td>
-                  <td className="p-4 font-medium text-gray-700">{log.productName}</td>
+                  <td className="p-4 font-medium text-gray-700">
+                    {log.productName}
+                    {log.billNumber && <span className="block text-[8px] text-gray-400 font-black uppercase tracking-tighter">#{log.billNumber}</span>}
+                  </td>
                   <td className="p-4 font-black text-gray-600">{log.quantity} {log.productUnit}</td>
                   <td className="p-4 text-right">
-                     <span className="font-black text-gray-900">৳{log.totalPrice}</span>
+                     <span className={`font-black ${log.type === 'stockOut' && !log.billNumber?.startsWith('RET-') ? 'text-emerald-700' : log.type === 'stockIn' || log.type === 'expense' ? 'text-rose-600' : 'text-gray-900'}`}>
+                       ৳{Math.abs(log.totalPrice).toLocaleString()}
+                     </span>
                      {log.discount > 0 && <p className="text-[9px] text-rose-500 font-bold italic">(-৳{log.discount} {t.discount})</p>}
                   </td>
                   <td className="p-4 text-center no-print">
                     <div className="flex justify-center gap-1">
-                      <button onClick={() => { setEditingLog(log); setEditFormData({...log}); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition" title="Edit"><i className="fas fa-pen-to-square"></i></button>
-                      <button onClick={() => { if(confirm('মুছে ফেলতে চান?')) log.type === 'stockIn' ? onDeleteStockIn(log.id) : onDeleteStockOut(log.id) }} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition" title="Delete"><i className="fas fa-trash-can"></i></button>
+                      {(log.type === 'stockIn' || log.type === 'stockOut') && (
+                        <button onClick={() => { setEditingLog(log); setEditFormData({...log}); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition" title="Edit"><i className="fas fa-pen-to-square"></i></button>
+                      )}
+                      <button onClick={() => { 
+                        if(confirm(lang === 'bn' ? 'মুছে ফেলতে চান?' : 'Delete?')) {
+                          if (log.type === 'stockIn') onDeleteStockIn(log.id);
+                          else if (log.type === 'stockOut') onDeleteStockOut(log.id);
+                          // Deletion for payments/expenses should typically be done in their specific views for safety
+                        }
+                      }} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition" title="Delete"><i className="fas fa-trash-can"></i></button>
                     </div>
                   </td>
                 </tr>

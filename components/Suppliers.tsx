@@ -42,7 +42,9 @@ const Suppliers: React.FC<SuppliersProps> = ({ data, onAdd, onUpdate, onDelete, 
     printBtn: lang === 'bn' ? 'প্রিন্ট' : 'Print'
   };
 
-  const filtered = data.suppliers.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.phone.includes(searchTerm));
+  const filtered = data.suppliers
+    .filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.phone.includes(searchTerm))
+    .sort((a, b) => a.name.localeCompare(b.name, 'bn'));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
