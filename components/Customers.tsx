@@ -294,25 +294,25 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                 </tr>
               ))}
             </tbody>
-            {/* Optimized Print Footer: Grand totals in smaller layout as requested */}
+            {/* Table Footer: Clearly displays the grand totals summary for printing */}
             <tfoot className="border-t-4 border-black bg-gray-50 font-black print-total-row">
                 <tr>
-                    <td colSpan={2} className="px-4 py-4 text-[7px] font-black uppercase text-gray-400 align-top">
+                    <td colSpan={2} className="px-6 py-10 text-[9px] font-black uppercase text-gray-500 align-top">
                         {lang === 'bn' ? 'সর্বমোট হিসাব' : 'Grand Totals Summary'}
                     </td>
-                    <td className="px-4 py-4 text-right">
-                        <div className="flex flex-col items-end space-y-1">
+                    <td className="px-6 py-10 text-right">
+                        <div className="flex flex-col items-end space-y-4">
                            <div className="flex flex-col items-end">
-                               <span className="text-[7px] font-black uppercase text-gray-400 tracking-widest">
+                               <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em] mb-1">
                                   {lang === 'bn' ? 'মোট পাওনা (বাকি):' : 'Total Due (Receivable):'}
                                </span>
-                               <span className="text-base font-black text-rose-600 leading-tight">৳{stats.totalDue.toLocaleString()}</span>
+                               <span className="text-2xl font-black text-rose-600 leading-none">৳{stats.totalDue.toLocaleString()}</span>
                            </div>
                            <div className="flex flex-col items-end">
-                               <span className="text-[7px] font-black uppercase text-gray-400 tracking-widest">
+                               <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em] mb-1">
                                   {lang === 'bn' ? 'মোট অগ্রিম (জমা):' : 'Total Advance:'}
                                </span>
-                               <span className="text-base font-black text-emerald-700 leading-tight">৳{stats.totalAdvance.toLocaleString()}</span>
+                               <span className="text-2xl font-black text-emerald-700 leading-none">৳{stats.totalAdvance.toLocaleString()}</span>
                            </div>
                         </div>
                     </td>
