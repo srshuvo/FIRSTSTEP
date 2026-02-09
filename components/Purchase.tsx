@@ -15,6 +15,7 @@ const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
   const [formData, setFormData] = useState({
     productId: '',
     supplierId: '',
+    billNumber: '',
     quantity: 0,
     unitPrice: 0,
     date: new Date().toISOString().split('T')[0]
@@ -49,10 +50,6 @@ const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const target = e.target as HTMLElement;
-    const isInput = target.tagName === 'INPUT';
-    const isSelect = target.tagName === 'SELECT';
-    const isButton = target.tagName === 'BUTTON';
-
     const elements = Array.from(formRef.current?.elements || []).filter(el => {
       const tag = (el as HTMLElement).tagName;
       return (tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON') && !(el as any).disabled;
@@ -62,17 +59,9 @@ const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
     if (index === -1) return;
 
     if (e.key === 'Enter') {
-      if (isButton && (target as HTMLButtonElement).type === 'submit') return;
+      if (target.tagName === 'BUTTON' && (target as HTMLButtonElement).type === 'submit') return;
       e.preventDefault();
       if (index < elements.length - 1) elements[index + 1].focus();
-    } else if (e.key === 'ArrowDown') {
-      if (isSelect) return;
-      e.preventDefault();
-      if (index < elements.length - 1) elements[index + 1].focus();
-    } else if (e.key === 'ArrowUp') {
-      if (isSelect) return;
-      e.preventDefault();
-      if (index > 0) elements[index - 1].focus();
     }
   };
 
@@ -90,7 +79,7 @@ const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
       totalPrice: formData.quantity * formData.unitPrice
     });
     alert(lang === 'bn' ? "সফলভাবে সংরক্ষিত!" : "Saved successfully!");
-    setFormData({ ...formData, productId: '', quantity: 0 });
+    setFormData({ ...formData, productId: '', quantity: 0, billNumber: '' });
     setSearchTerm('');
   };
 
@@ -111,15 +100,15 @@ const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
+              <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'চালান / বিল নম্বর' : 'Challan / Bill No'}</label>
+              <input type="text" placeholder={lang === 'bn' ? 'চালান নম্বর' : 'Bill No'} value={formData.billNumber} onChange={e => setFormData({...formData, billNumber: e.target.value})} className="w-full border p-3 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+            <div>
               <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'সাপ্লায়ার' : 'Supplier'}</label>
               <select required value={formData.supplierId} onChange={e => setFormData({...formData, supplierId: e.target.value})} className="w-full border p-3 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500">
                 <option value="">{lang === 'bn' ? 'সাপ্লায়ার' : 'Supplier'}</option>
                 {data.suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
-            </div>
-            <div>
-              <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'তারিখ' : 'Date'}</label>
-              <input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full border p-3 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -131,6 +120,10 @@ const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
               <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'দর' : 'Rate'}</label>
               <input required type="number" placeholder={lang === 'bn' ? 'দর' : 'Rate'} value={formData.unitPrice || ''} onChange={e => setFormData({...formData, unitPrice: Number(e.target.value)})} className="w-full border p-3 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
             </div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'তারিখ' : 'Date'}</label>
+            <input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full border p-3 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
           </div>
           <div className="p-4 bg-emerald-600 text-white rounded-xl flex justify-between items-center shadow-lg">
             <span className="font-bold">{lang === 'bn' ? 'মোট খরচ: ' : 'Total: '}</span><span className="text-2xl font-black">৳{formData.quantity * formData.unitPrice}</span>

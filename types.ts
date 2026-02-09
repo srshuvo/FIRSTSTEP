@@ -41,6 +41,7 @@ export interface Customer {
 
 export interface StockIn {
   id: string;
+  billNumber?: string;
   productId: string;
   productName: string; 
   productUnit: string; 

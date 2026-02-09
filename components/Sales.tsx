@@ -45,10 +45,6 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const target = e.target as HTMLElement;
-    const isInput = target.tagName === 'INPUT';
-    const isSelect = target.tagName === 'SELECT';
-    const isButton = target.tagName === 'BUTTON';
-
     const elements = Array.from(formRef.current?.elements || []).filter(el => {
       const tag = (el as HTMLElement).tagName;
       return (tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON') && !(el as any).disabled;
@@ -58,17 +54,9 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
     if (index === -1) return;
 
     if (e.key === 'Enter') {
-      if (isButton && (target as HTMLButtonElement).type === 'submit') return;
+      if (target.tagName === 'BUTTON' && (target as HTMLButtonElement).type === 'submit') return;
       e.preventDefault();
       if (index < elements.length - 1) elements[index + 1].focus();
-    } else if (e.key === 'ArrowDown') {
-      if (isSelect) return;
-      e.preventDefault();
-      if (index < elements.length - 1) elements[index + 1].focus();
-    } else if (e.key === 'ArrowUp') {
-      if (isSelect) return;
-      e.preventDefault();
-      if (index > 0) elements[index - 1].focus();
     }
   };
 
@@ -102,15 +90,15 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
+              <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'বিল নম্বর' : 'Bill Number'}</label>
+              <input type="text" value={formData.billNumber} onChange={e => setFormData({...formData, billNumber: e.target.value})} className="w-full border p-3 rounded-xl font-bold bg-white outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+            <div>
               <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'কাস্টমার' : 'Customer'}</label>
               <select required value={formData.customerId} onChange={e => setFormData({...formData, customerId: e.target.value})} className="w-full border p-3 rounded-xl font-bold bg-white outline-none focus:ring-2 focus:ring-emerald-500">
                 <option value="">{lang === 'bn' ? 'কাস্টমার' : 'Customer'}</option>
                 {data.customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
-            </div>
-            <div>
-              <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'তারিখ' : 'Date'}</label>
-              <input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full border p-3 rounded-xl font-bold bg-white outline-none focus:ring-2 focus:ring-emerald-500" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -132,6 +120,10 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
               <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'পরিশোধ (Paid)' : 'Paid Amount'}</label>
               <input type="number" placeholder={lang === 'bn' ? 'পরিশোধ (Paid)' : 'Paid'} value={formData.paidAmount || ''} onChange={e => setFormData({...formData, paidAmount: Number(e.target.value)})} className="w-full border p-3 rounded-xl font-bold bg-white outline-none focus:ring-2 focus:ring-emerald-500" />
             </div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'তারিখ' : 'Date'}</label>
+            <input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full border p-3 rounded-xl font-bold bg-white outline-none focus:ring-2 focus:ring-emerald-500" />
           </div>
           <div className="flex items-center gap-2 px-1">
              <input type="checkbox" id="isSample" checked={formData.isSample} onChange={e => setFormData({...formData, isSample: e.target.checked})} className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500" />
