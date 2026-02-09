@@ -405,7 +405,11 @@ const App: React.FC = () => {
               onDeleteStockIn={deleteStockIn} 
               onDeleteStockOut={deleteStockOut} 
               onUpdateStockIn={updateStockIn} 
-              onUpdateStockOut={updateStockOut} 
+              onUpdateStockOut={updateStockOut}
+              onDeletePayment={deletePayment}
+              onUpdatePayment={updatePayment}
+              onDeleteLedgerEntry={deleteLedgerEntry}
+              onUpdateLedgerEntry={updateLedgerEntry}
               lang={lang} 
             />
           )}

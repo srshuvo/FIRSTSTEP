@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { AppData, StockIn, StockOut } from '../types';
+import { AppData, StockIn, StockOut, PaymentLog, LedgerEntry } from '../types';
 
 interface ReportsProps {
   data: AppData;
@@ -8,10 +8,14 @@ interface ReportsProps {
   onDeleteStockOut: (id: string) => void;
   onUpdateStockIn: (log: StockIn) => void;
   onUpdateStockOut: (log: StockOut) => void;
+  onDeletePayment: (id: string) => void;
+  onUpdatePayment: (log: PaymentLog) => void;
+  onDeleteLedgerEntry: (id: string) => void;
+  onUpdateLedgerEntry: (log: LedgerEntry) => void;
   lang: 'bn' | 'en';
 }
 
-const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockOut, onUpdateStockIn, onUpdateStockOut, lang }) => {
+const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockOut, onUpdateStockIn, onUpdateStockOut, onDeletePayment, onUpdatePayment, onDeleteLedgerEntry, onUpdateLedgerEntry, lang }) => {
   const [filter, setFilter] = useState({
     type: 'all',
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -37,30 +41,16 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const target = e.target as HTMLElement;
-    const isInput = target.tagName === 'INPUT';
-    const isSelect = target.tagName === 'SELECT';
-    const isButton = target.tagName === 'BUTTON';
-
     const elements = Array.from(editFormRef.current?.elements || []).filter(el => {
       const tag = (el as HTMLElement).tagName;
       return (tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON') && !(el as any).disabled;
     }) as HTMLElement[];
     const index = elements.indexOf(target);
-
     if (index === -1) return;
-
     if (e.key === 'Enter') {
-      if (isButton && (target as HTMLButtonElement).type === 'submit') return;
+      if ((target as any).type === 'submit') return;
       e.preventDefault();
       if (index < elements.length - 1) elements[index + 1].focus();
-    } else if (e.key === 'ArrowDown') {
-      if (isSelect) return;
-      e.preventDefault();
-      if (index < elements.length - 1) elements[index + 1].focus();
-    } else if (e.key === 'ArrowUp') {
-      if (isSelect) return;
-      e.preventDefault();
-      if (index > 0) elements[index - 1].focus();
     }
   };
 
@@ -89,111 +79,67 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
     cancel: lang === 'bn' ? 'বাতিল' : 'Cancel',
     save: lang === 'bn' ? 'সেভ করুন' : 'Save',
     price: lang === 'bn' ? 'দর' : 'Rate',
-    paid: lang === 'bn' ? 'পরিশোধ' : 'Paid',
-    reportSubtitle: lang === 'bn' ? 'ডিজিটাল হিসাব খতিয়ান রিপোর্ট' : 'Digital Accounting Statement'
+    paid: lang === 'bn' ? 'পরিশোধ' : 'Paid'
   };
 
   const filteredLogs = useMemo(() => {
     let combined: any[] = [];
-    
-    // Purchases
     if (filter.type === 'all' || filter.type === 'stockIn') {
       combined.push(...data.stockInLogs.map(l => ({ 
-        ...l, 
-        typeLabel: t.buyLabel, 
-        type: 'stockIn',
-        colorClass: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+        ...l, typeLabel: t.buyLabel, type: 'stockIn', colorClass: 'bg-indigo-100 text-indigo-700 border-indigo-200',
         partyName: data.suppliers.find(s => s.id === l.supplierId)?.name || 'N/A'
       })));
     }
-    
-    // Sales and Returns
     if (filter.type === 'all' || filter.type === 'stockOut') {
       combined.push(...data.stockOutLogs.map(l => {
         const isReturn = l.billNumber?.startsWith('RET-') || l.dueAdded < 0;
         return {
-          ...l,
-          typeLabel: isReturn ? t.returnLabel : t.sellLabel,
-          type: 'stockOut',
+          ...l, typeLabel: isReturn ? t.returnLabel : t.sellLabel, type: 'stockOut',
           colorClass: isReturn ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200',
           partyName: data.customers.find(c => c.id === l.customerId)?.name || 'N/A'
         };
       }));
     }
-
-    // Payments
     if (filter.type === 'all' || filter.type === 'payment') {
       combined.push(...data.paymentLogs.map(l => ({
-        ...l,
-        typeLabel: t.paymentLabel,
-        type: 'payment',
-        productName: l.note || (lang === 'bn' ? 'পেমেন্ট রিসিভ' : 'Payment Received'),
-        productUnit: '',
-        quantity: '-',
-        totalPrice: l.amount,
-        colorClass: 'bg-amber-100 text-amber-700 border-amber-200',
+        ...l, typeLabel: t.paymentLabel, type: 'payment', productName: l.note || (lang === 'bn' ? 'পেমেন্ট রিসিভ' : 'Payment Received'),
+        productUnit: '', quantity: '-', totalPrice: l.amount, colorClass: 'bg-amber-100 text-amber-700 border-amber-200',
         partyName: data.customers.find(c => c.id === l.customerId)?.name || 'N/A'
       })));
     }
-
-    // Expenses (Ledger Entries)
     if ((filter.type === 'all' || filter.type === 'expense') && data.ledgerEntries) {
       combined.push(...data.ledgerEntries.map(l => ({
-        ...l,
-        typeLabel: t.expenseLabel,
-        type: 'expense',
-        productName: l.description,
-        productUnit: '',
-        quantity: '-',
-        totalPrice: l.amount,
-        colorClass: 'bg-rose-100 text-rose-700 border-rose-200',
-        partyName: l.name || 'N/A'
+        ...l, typeLabel: t.expenseLabel, type: 'expense', productName: l.description, productUnit: '', quantity: '-',
+        totalPrice: l.amount, colorClass: 'bg-rose-100 text-rose-700 border-rose-200', partyName: l.name || 'N/A'
       })));
     }
-
-    return combined
-      .filter(l => l.date >= filter.startDate && l.date <= filter.endDate)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return combined.filter(l => l.date >= filter.startDate && l.date <= filter.endDate).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [data, filter, lang]);
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingLog.type === 'stockIn') {
-      const updated: StockIn = { ...editFormData, totalPrice: editFormData.quantity * editFormData.unitPrice };
-      onUpdateStockIn(updated);
+      onUpdateStockIn({ ...editFormData, totalPrice: editFormData.quantity * editFormData.unitPrice });
     } else if (editingLog.type === 'stockOut') {
-      const subtotal = editFormData.quantity * editFormData.unitPrice;
-      const total = subtotal - (editFormData.discount || 0);
-      const updated: StockOut = {
-        ...editFormData,
-        totalPrice: total,
-        dueAdded: total - (editFormData.paidAmount || 0)
-      };
-      onUpdateStockOut(updated);
+      const sub = editFormData.quantity * editFormData.unitPrice;
+      const tot = sub - (editFormData.discount || 0);
+      onUpdateStockOut({ ...editFormData, totalPrice: tot, dueAdded: tot - (editFormData.paidAmount || 0) });
+    } else if (editingLog.type === 'payment') {
+      onUpdatePayment({ ...editFormData, amount: Number(editFormData.totalPrice) });
+    } else if (editingLog.type === 'expense') {
+      onUpdateLedgerEntry({ ...editFormData, description: editFormData.productName, amount: Number(editFormData.totalPrice) });
     }
-    // Note: Inline editing for paymentLogs and ledgerEntries can be handled by their respective components
     setEditingLog(null);
   };
 
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 no-print">
-        <h3 className="text-lg font-black text-emerald-900 mb-4 flex items-center gap-2">
-          <i className="fas fa-sliders text-emerald-600"></i> {t.filterTitle}
-        </h3>
+        <h3 className="text-lg font-black text-emerald-900 mb-4 flex items-center gap-2"><i className="fas fa-sliders text-emerald-600"></i> {t.filterTitle}</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.reportType}</label>
-            <select 
-              ref={filterSelectRef}
-              value={filter.type} 
-              onChange={e => setFilter({ ...filter, type: e.target.value })} 
-              className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200"
-            >
+            <select ref={filterSelectRef} value={filter.type} onChange={e => setFilter({ ...filter, type: e.target.value })} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200">
               <option value="all">{t.all}</option>
               <option value="stockIn">{t.buyLabel}</option>
               <option value="stockOut">{t.sellLabel}</option>
@@ -210,10 +156,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
             <input type="date" value={filter.endDate} onChange={e => setFilter({...filter, endDate: e.target.value})} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200" />
           </div>
           <div className="flex items-end">
-            <button 
-              onClick={handlePrint} 
-              className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-black hover:bg-emerald-700 transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/10"
-            >
+            <button onClick={() => window.print()} className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-black hover:bg-emerald-700 transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/10">
               <i className="fas fa-file-export"></i> {t.print}
             </button>
           </div>
@@ -224,9 +167,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
         <div className="hidden print:block p-8 text-center border-b-2 border-emerald-500 bg-emerald-50/10">
            <h2 className="text-2xl font-black text-emerald-900 tracking-tighter uppercase">FIRST STEP - {t.history}</h2>
            <p className="text-[10px] font-bold text-gray-500 mt-1">Report Generated: {new Date().toLocaleDateString()}</p>
-           <div className="w-16 h-1 bg-emerald-500 mx-auto mt-2 rounded-full"></div>
         </div>
-        
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-tighter">
@@ -259,18 +200,16 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
                      <span className={`font-black ${log.type === 'stockOut' && !log.billNumber?.startsWith('RET-') ? 'text-emerald-700' : log.type === 'stockIn' || log.type === 'expense' ? 'text-rose-600' : 'text-gray-900'}`}>
                        ৳{Math.abs(log.totalPrice).toLocaleString()}
                      </span>
-                     {log.discount > 0 && <p className="text-[9px] text-rose-500 font-bold italic">(-৳{log.discount} {t.discount})</p>}
                   </td>
                   <td className="p-4 text-center no-print">
                     <div className="flex justify-center gap-1">
-                      {(log.type === 'stockIn' || log.type === 'stockOut') && (
-                        <button onClick={() => { setEditingLog(log); setEditFormData({...log}); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition" title="Edit"><i className="fas fa-pen-to-square"></i></button>
-                      )}
+                      <button onClick={() => { setEditingLog(log); setEditFormData({...log}); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition" title="Edit"><i className="fas fa-pen-to-square"></i></button>
                       <button onClick={() => { 
                         if(confirm(lang === 'bn' ? 'মুছে ফেলতে চান?' : 'Delete?')) {
                           if (log.type === 'stockIn') onDeleteStockIn(log.id);
                           else if (log.type === 'stockOut') onDeleteStockOut(log.id);
-                          // Deletion for payments/expenses should typically be done in their specific views for safety
+                          else if (log.type === 'payment') onDeletePayment(log.id);
+                          else if (log.type === 'expense') onDeleteLedgerEntry(log.id);
                         }
                       }} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition" title="Delete"><i className="fas fa-trash-can"></i></button>
                     </div>
@@ -279,12 +218,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
               ))}
             </tbody>
           </table>
-          {filteredLogs.length === 0 && (
-            <div className="p-20 text-center">
-               <div className="text-gray-200 text-6xl mb-4"><i className="fas fa-file-waveform"></i></div>
-               <p className="text-gray-400 font-black italic">{lang === 'bn' ? 'কোনো ডাটা পাওয়া যায়নি' : 'No transaction data available'}</p>
-            </div>
-          )}
+          {filteredLogs.length === 0 && <div className="p-20 text-center"><p className="text-gray-400 font-black italic">{lang === 'bn' ? 'কোনো ডাটা পাওয়া যায়নি' : 'No data'}</p></div>}
         </div>
       </div>
 
@@ -295,28 +229,44 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
                <i className="fas fa-file-pen text-emerald-600"></i> {t.editTitle}
             </h3>
             <form ref={editFormRef} onKeyDown={handleKeyDown} onSubmit={handleEditSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.date}</label>
-                  <input type="date" value={editFormData.date} onChange={e => setEditFormData({...editFormData, date: e.target.value})} className="w-full border p-2.5 rounded-xl font-bold bg-gray-50 border-gray-200" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.qty}</label>
-                  <input type="number" value={editFormData.quantity} onChange={e => setEditFormData({...editFormData, quantity: Number(e.target.value)})} className="w-full border p-2.5 rounded-xl font-bold bg-gray-50 border-gray-200" />
-                </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.date}</label>
+                <input type="date" value={editFormData.date} onChange={e => setEditFormData({...editFormData, date: e.target.value})} className="w-full border p-2.5 rounded-xl font-bold bg-gray-50 border-gray-200" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.price}</label>
-                  <input type="number" value={editFormData.unitPrice} onChange={e => setEditFormData({...editFormData, unitPrice: Number(e.target.value)})} className="w-full border p-2.5 rounded-xl font-bold bg-gray-50 border-gray-200" />
+              
+              {(editingLog.type === 'stockIn' || editingLog.type === 'stockOut') && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.qty}</label>
+                    <input type="number" value={editFormData.quantity} onChange={e => setEditFormData({...editFormData, quantity: Number(e.target.value)})} className="w-full border p-2.5 rounded-xl font-bold bg-gray-50 border-gray-200" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.price}</label>
+                    <input type="number" value={editFormData.unitPrice} onChange={e => setEditFormData({...editFormData, unitPrice: Number(e.target.value)})} className="w-full border p-2.5 rounded-xl font-bold bg-gray-50 border-gray-200" />
+                  </div>
                 </div>
-                {editingLog.type === 'stockOut' && (
+              )}
+
+              {(editingLog.type === 'payment' || editingLog.type === 'expense') && (
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.total}</label>
+                  <input type="number" value={editFormData.totalPrice} onChange={e => setEditFormData({...editFormData, totalPrice: Number(e.target.value)})} className="w-full border p-2.5 rounded-xl font-bold bg-gray-50 border-gray-200" />
+                </div>
+              )}
+
+              {editingLog.type === 'stockOut' && (
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.discount}</label>
                     <input type="number" value={editFormData.discount || 0} onChange={e => setEditFormData({...editFormData, discount: Number(e.target.value)})} className="w-full border p-2.5 rounded-xl font-bold bg-gray-50 border-gray-200" />
                   </div>
-                )}
-              </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.paid}</label>
+                    <input type="number" value={editFormData.paidAmount || 0} onChange={e => setEditFormData({...editFormData, paidAmount: Number(e.target.value)})} className="w-full border p-2.5 rounded-xl font-bold bg-gray-50 border-gray-200" />
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-3 pt-6">
                 <button type="button" onClick={() => setEditingLog(null)} className="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-black hover:bg-gray-200 transition">{t.cancel}</button>
                 <button type="submit" className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-black shadow-lg hover:bg-emerald-700 transition">{t.save}</button>
