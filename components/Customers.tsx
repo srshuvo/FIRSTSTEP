@@ -294,35 +294,35 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                 </tr>
               ))}
             </tbody>
-            {/* Table Footer: Clearly displays the grand totals summary for printing. Optimized to prevent cut-off. */}
+            {/* Table Footer: Displays the grand totals summary for printing. Enhanced safety for "Total Advance". */}
             <tfoot className="border-t-4 border-black bg-gray-50 font-black print-total-row" style={{ pageBreakInside: 'avoid' }}>
                 <tr style={{ pageBreakInside: 'avoid' }}>
-                    <td colSpan={2} className="px-6 py-4 text-[9px] font-black uppercase text-gray-400 align-top">
+                    <td colSpan={2} className="px-6 py-6 text-[10px] font-black uppercase text-gray-400 align-top">
                         <span className="block border-b border-gray-200 pb-1 mb-1">
                           {lang === 'bn' ? 'সর্বমোট হিসাব' : 'Grand Totals Summary'}
                         </span>
-                        <span className="text-[7px] font-bold text-gray-300">FIRST STEP - Digital Ledger</span>
+                        <span className="text-[8px] font-bold text-gray-300">FIRST STEP - Digital Ledger</span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                        <div className="inline-flex flex-col items-end space-y-2 min-w-[200px]">
+                    <td className="px-6 py-6 text-right">
+                        <div className="inline-flex flex-col items-end space-y-4 min-w-[220px]">
                            <div className="flex flex-col items-end w-full">
-                               <span className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em] mb-0.5">
+                               <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.15em] mb-1">
                                   {lang === 'bn' ? 'মোট পাওনা (বাকি):' : 'Total Due (Receivable):'}
                                </span>
-                               <span className="text-xl font-black text-rose-600 leading-none">৳{stats.totalDue.toLocaleString()}</span>
+                               <span className="text-2xl font-black text-rose-600 leading-none">৳{stats.totalDue.toLocaleString()}</span>
                            </div>
                            <div className="flex flex-col items-end w-full">
-                               <span className="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em] mb-0.5">
+                               <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.15em] mb-1">
                                   {lang === 'bn' ? 'মোট অগ্রিম (জমা):' : 'Total Advance:'}
                                </span>
-                               <span className="text-xl font-black text-emerald-700 leading-none">৳{stats.totalAdvance.toLocaleString()}</span>
+                               <span className="text-2xl font-black text-emerald-700 leading-none">৳{stats.totalAdvance.toLocaleString()}</span>
                            </div>
                         </div>
                     </td>
                     <td className="no-print"></td>
                 </tr>
-                {/* Print Safety Row: ensures content doesn't hit the absolute edge of the page */}
-                <tr className="hidden print:table-row h-8">
+                {/* Increased Print Safety Buffer Row: prevents the last line from being clipped by printer bottom margins */}
+                <tr className="hidden print:table-row h-16">
                   <td colSpan={4} className="border-none"></td>
                 </tr>
             </tfoot>
