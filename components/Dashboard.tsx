@@ -22,7 +22,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && e.key.toLowerCase() === 's') {
         e.preventDefault();
-        // Just as a UI hint for pages without search
         const filterBar = document.getElementById('dashboard-filters');
         if (filterBar) {
           filterBar.classList.add('ring-2', 'ring-emerald-500');
@@ -38,23 +37,32 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
 
   const getFilteredLogs = (logs: any[]) => {
     const now = new Date();
+    now.setHours(23, 59, 59, 999);
+    
     return (logs || []).filter(log => {
       const logDate = new Date(log.date);
       if (dateFilter === 'today') return log.date === todayStr;
+      
       if (dateFilter === '7days') {
         const diff = (now.getTime() - logDate.getTime()) / (1000 * 3600 * 24);
-        return diff <= 7;
+        return diff >= 0 && diff <= 7;
       }
-      if (dateFilter === 'month') return log.date.startsWith(todayStr.slice(0, 7));
+      if (dateFilter === 'month') {
+        const diff = (now.getTime() - logDate.getTime()) / (1000 * 3600 * 24);
+        return diff >= 0 && diff <= 30;
+      }
       if (dateFilter === '6months') {
         const diff = (now.getTime() - logDate.getTime()) / (1000 * 3600 * 24);
-        return diff <= 180;
+        return diff >= 0 && diff <= 180;
       }
       if (dateFilter === '12months') {
         const diff = (now.getTime() - logDate.getTime()) / (1000 * 3600 * 24);
-        return diff <= 365;
+        return diff >= 0 && diff <= 365;
       }
-      if (dateFilter === 'custom') return log.date >= customRange.start && log.date <= customRange.end;
+      if (dateFilter === 'custom') {
+        if (!customRange.start || !customRange.end) return true;
+        return log.date >= customRange.start && log.date <= customRange.end;
+      }
       return true;
     });
   };
@@ -63,34 +71,59 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
     const p = data.products.find(prod => prod.id === log.productId);
     if (!p) return 0;
 
+    const isReturn = log.billNumber?.startsWith('RET-') || log.dueAdded < 0;
+    let profit = 0;
+
     if (log.isSample) {
         const cost = (p.costPrice || 0) * log.quantity;
-        return log.paidAmount - cost;
+        profit = log.paidAmount - cost;
+    } else {
+        const cat = data.categories.find(c => c.id === p.categoryId);
+        const isSpareParts = cat?.name.toLowerCase().includes('spare parts') || cat?.name.includes('স্পেয়ার পার্টস');
+        
+        if (isSpareParts) {
+            // ৪০% লাভের লজিক বজায় রাখা হয়েছে
+            profit = (log.unitPrice * log.quantity) * 0.4;
+        } else {
+            // গ্রস প্রফিট = (বিক্রি মূল্য - কেনা মূল্য) * পরিমাণ
+            profit = (log.unitPrice - (p.costPrice || 0)) * log.quantity;
+        }
+        // বিক্রয়ের সময় দেওয়া সরাসরি ডিসকাউন্ট বিয়োগ
+        profit -= (log.discount || 0);
     }
 
-    const cat = data.categories.find(c => c.id === p.categoryId);
-    const isSpareParts = cat?.name.toLowerCase().includes('spare parts') || cat?.name.includes('স্পেয়ার পার্টস');
-    if (isSpareParts) return (log.unitPrice * log.quantity) * 0.4;
-    return (log.unitPrice - (p.costPrice || 0)) * log.quantity;
+    return isReturn ? -profit : profit;
   };
 
   const stats = useMemo(() => {
     const sOut = getFilteredLogs(data.stockOutLogs);
-    const sIn = getFilteredLogs(data.stockInLogs);
-    const payments = getFilteredLogs(data.paymentLogs);
+    const payments = getFilteredLogs(data.paymentLogs || []);
     const ledgerEntries = getFilteredLogs(data.ledgerEntries || []);
 
-    const totalSales = sOut.reduce((acc, l) => acc + l.totalPrice, 0);
-    const totalPurchase = sIn.reduce((acc, l) => acc + l.totalPrice, 0);
-    const totalExpenses = ledgerEntries.reduce((acc, l) => acc + (l.amount || 0), 0);
+    // মোট বিক্রি (রিটার্ন শনাক্ত করে বিয়োগ করা হয়েছে)
+    const totalSales = sOut.reduce((acc, l) => {
+      const isReturn = l.billNumber?.startsWith('RET-') || l.dueAdded < 0;
+      return isReturn ? acc - l.totalPrice : acc + l.totalPrice;
+    }, 0);
+
+    // গ্রস লাভ
     const grossProfit = sOut.reduce((acc, l) => acc + calculateProfit(l), 0);
+    
+    // সাধারণ খরচ (Expenses)
+    const totalExpenses = ledgerEntries.reduce((acc, l) => acc + (l.amount || 0), 0);
+    
+    // পেমেন্ট নেওয়ার সময় দেওয়া অতিরিক্ত ডিসকাউন্ট (Settlement Discount)
     const discountsGiven = payments.reduce((acc, l) => acc + (l.discount || 0), 0);
-    const netProfit = grossProfit - discountsGiven - totalExpenses;
+    
+    // নীট লাভ
+    const netProfit = grossProfit - totalExpenses - discountsGiven;
+
+    // Snapshot Metrics (এগুলো সবসময় বর্তমান মোট ডাটা দেখাবে)
     const totalDue = data.customers.reduce((acc, c) => acc + (c.dueAmount > 0 ? c.dueAmount : 0), 0);
     const totalStockValue = data.products.reduce((acc, p) => acc + (p.stock * p.costPrice), 0);
 
     return { 
-      totalSales, totalPurchase, netProfit, grossProfit,
+      totalSales, netProfit, grossProfit,
       totalDue, totalStockValue
     };
   }, [data, dateFilter, customRange]);
@@ -121,12 +154,13 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
       const p = data.products.find(prod => prod.id === log.productId);
       const catId = p?.categoryId || 'none';
       if (performanceMap[catId]) {
-        performanceMap[catId].sales += log.totalPrice;
+        const isReturn = log.billNumber?.startsWith('RET-') || log.dueAdded < 0;
+        performanceMap[catId].sales += isReturn ? -log.totalPrice : log.totalPrice;
         performanceMap[catId].profit += calculateProfit(log);
       }
     });
 
-    return Object.values(performanceMap);
+    return Object.values(performanceMap).filter(cat => cat.stock > 0 || cat.sales !== 0);
   }, [data, dateFilter, customRange, lang]);
 
   const fullDates = useMemo(() => {
@@ -179,7 +213,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
 
   const t = {
     sales: lang === 'bn' ? 'মোট বিক্রি' : "Sales",
-    purchase: lang === 'bn' ? 'মোট কেনা' : "Purchase",
     grossProfit: lang === 'bn' ? 'মোট লাভ' : 'Gross Profit',
     netProfit: lang === 'bn' ? 'নীট লাভ' : "Net Profit",
     due: lang === 'bn' ? 'মোট পাওনা' : 'Total Due',
@@ -234,24 +267,36 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
            <i className="fas fa-microchip text-emerald-500 text-[8px] sm:text-[10px] animate-pulse"></i>
            <span className="text-[8px] sm:text-[10px] font-black uppercase text-emerald-500 tracking-[0.2em]">Filters</span>
         </div>
-        {['today', '7days', 'month', '6months', '12months', 'custom'].map(f => (
+        {['today', '7days', 'month', 'custom'].map(f => (
           <button
             key={f}
             onClick={() => setDateFilter(f as any)}
             className={`px-3 sm:px-5 py-2 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${dateFilter === f ? 'bg-emerald-600 text-white shadow-lg scale-105' : 'text-slate-500 hover:bg-emerald-50'}`}
           >
-            {lang === 'bn' ? (f === 'today' ? 'আজ' : f === '7days' ? '৭ দিন' : f === 'month' ? '১ মাস' : f === '6months' ? '৬ মাস' : f === '12months' ? '১২ মাস' : 'কাস্টম') : f}
+            {lang === 'bn' ? (f === 'today' ? 'আজ' : f === '7days' ? '৭ দিন' : f === 'month' ? '১ মাস' : 'কাস্টম') : f}
           </button>
         ))}
       </div>
 
-      <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-6">
+      {dateFilter === 'custom' && (
+        <div className="flex flex-wrap gap-4 p-4 bg-white rounded-2xl border border-gray-100 no-print animate-scale-in">
+           <div className="flex flex-col">
+             <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">{lang === 'bn' ? 'শুরু' : 'Start Date'}</label>
+             <input type="date" value={customRange.start} onChange={e => setCustomRange({...customRange, start: e.target.value})} className="border p-2 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
+           </div>
+           <div className="flex flex-col">
+             <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">{lang === 'bn' ? 'শেষ' : 'End Date'}</label>
+             <input type="date" value={customRange.end} onChange={e => setCustomRange({...customRange, end: e.target.value})} className="border p-2 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500" />
+           </div>
+        </div>
+      )}
+
+      <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-6">
         <KPICard title={t.sales} value={`৳${stats.totalSales.toLocaleString()}`} icon="fa-wallet" color="blue" />
-        <KPICard title={t.purchase} value={`৳${stats.totalPurchase.toLocaleString()}`} icon="fa-cart-flatbed" color="orange" />
-        <KPICard title={t.stockVal} value={`৳${stats.totalStockValue.toLocaleString()}`} icon="fa-boxes-stacked" color="indigo" />
         <KPICard title={t.grossProfit} value={`৳${stats.grossProfit.toLocaleString()}`} icon="fa-money-bill-trend-up" color="emerald-light" />
         <KPICard title={t.netProfit} value={`৳${stats.netProfit.toLocaleString()}`} icon="fa-chart-line" color="emerald" />
         <KPICard title={t.due} value={`৳${stats.totalDue.toLocaleString()}`} icon="fa-user-clock" color="red" />
+        <KPICard title={t.stockVal} value={`৳${stats.totalStockValue.toLocaleString()}`} icon="fa-boxes-stacked" color="indigo" />
       </section>
 
       {/* Low Stock Alerts */}
