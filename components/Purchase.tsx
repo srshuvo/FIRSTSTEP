@@ -10,7 +10,7 @@ interface PurchaseProps {
 
 const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const formRef = useRef<HTMLFormElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     productId: '',
@@ -32,6 +32,44 @@ const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (['Enter', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+      const target = e.target as HTMLElement;
+      
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && 
+          (target.tagName === 'SELECT' || (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'number'))) {
+        return; 
+      }
+
+      const container = containerRef.current;
+      if (!container) return;
+
+      const elements = Array.from(container.querySelectorAll('input, select, button'))
+        .filter(el => {
+          const htmlEl = el as HTMLElement;
+          return !htmlEl.hasAttribute('disabled') && 
+                 htmlEl.tabIndex !== -1 && 
+                 htmlEl.offsetParent !== null;
+        }) as HTMLElement[];
+      
+      const index = elements.indexOf(target);
+      if (index === -1) return;
+
+      if (e.key === 'Enter' || e.key === 'ArrowDown') {
+        if (e.key === 'Enter' && target.tagName === 'BUTTON') return;
+        e.preventDefault();
+        if (index < elements.length - 1) {
+          elements[index + 1].focus();
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (index > 0) {
+          elements[index - 1].focus();
+        }
+      }
+    }
+  };
+
   const filteredProducts = useMemo(() => {
     return data.products
       .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase().trim()))
@@ -47,23 +85,6 @@ const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
       }
     }
   }, [filteredProducts, searchTerm]);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    const target = e.target as HTMLElement;
-    const elements = Array.from(formRef.current?.elements || []).filter(el => {
-      const tag = (el as HTMLElement).tagName;
-      return (tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON') && !(el as any).disabled;
-    }) as HTMLElement[];
-    const index = elements.indexOf(target);
-
-    if (index === -1) return;
-
-    if (e.key === 'Enter') {
-      if (target.tagName === 'BUTTON' && (target as HTMLButtonElement).type === 'submit') return;
-      e.preventDefault();
-      if (index < elements.length - 1) elements[index + 1].focus();
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,13 +102,14 @@ const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
     alert(lang === 'bn' ? "সফলভাবে সংরক্ষিত!" : "Saved successfully!");
     setFormData({ ...formData, productId: '', quantity: 0, billNumber: '' });
     setSearchTerm('');
+    setTimeout(() => searchInputRef.current?.focus(), 10);
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-4 space-y-6">
+    <div className="max-w-2xl mx-auto p-4 space-y-6" ref={containerRef} onKeyDown={handleKeyDown}>
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
         <h3 className="text-xl font-black text-emerald-600 flex items-center gap-2"><i className="fas fa-cart-plus"></i> {lang === 'bn' ? 'মাল কেনা (Purchase)' : 'Purchase Entry'}</h3>
-        <form ref={formRef} onKeyDown={handleKeyDown} onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="p-4 bg-gray-50 rounded-xl space-y-4">
             <label className="block text-[10px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'মালের নাম দিয়ে খুঁজুন... (Alt+S)' : 'Search product name... (Alt+S)'}</label>
             <input ref={searchInputRef} type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full border p-3 rounded-xl font-bold bg-white outline-none focus:ring-2 focus:ring-emerald-500" placeholder={lang === 'bn' ? 'মালের নাম দিয়ে খুঁজুন...' : 'Search...'} />

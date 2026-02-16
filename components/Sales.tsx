@@ -22,7 +22,7 @@ interface CartItem {
 const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const formRef = useRef<HTMLFormElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [mainInfo, setMainInfo] = useState({
@@ -51,13 +51,54 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
+  // Keyboard Navigation Logic
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (['Enter', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+      const target = e.target as HTMLElement;
+      
+      // Allow select and number inputs to use arrows for value changes
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && 
+          (target.tagName === 'SELECT' || (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'number'))) {
+        return; 
+      }
+
+      const container = containerRef.current;
+      if (!container) return;
+
+      const elements = Array.from(container.querySelectorAll('input:not([type="hidden"]), select, button'))
+        .filter(el => {
+          const htmlEl = el as HTMLElement;
+          return !htmlEl.hasAttribute('disabled') && 
+                 htmlEl.tabIndex !== -1 && 
+                 htmlEl.offsetParent !== null; // element is visible
+        }) as HTMLElement[];
+      
+      const index = elements.indexOf(target);
+      if (index === -1) return;
+
+      if (e.key === 'Enter' || e.key === 'ArrowDown') {
+        // If it's a button, let it handle the Enter naturally
+        if (e.key === 'Enter' && target.tagName === 'BUTTON') return;
+        
+        e.preventDefault();
+        if (index < elements.length - 1) {
+          elements[index + 1].focus();
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (index > 0) {
+          elements[index - 1].focus();
+        }
+      }
+    }
+  };
+
   const filteredProducts = useMemo(() => {
     return data.products
       .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase().trim()))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [data.products, searchTerm]);
 
-  // Auto-select if only one product matches search
   useEffect(() => {
     const trimmed = searchTerm.trim();
     if (trimmed !== '' && filteredProducts.length === 1) {
@@ -93,6 +134,9 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
     setCartItems([...cartItems, newItem]);
     setItemEntry({ productId: '', quantity: 0, unitPrice: 0, discount: 0 });
     setSearchTerm('');
+    
+    // Return focus to search after adding
+    setTimeout(() => searchInputRef.current?.focus(), 10);
   };
 
   const removeFromCart = (id: string) => {
@@ -167,7 +211,7 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-4 space-y-6">
+    <div className="max-w-2xl mx-auto p-4 space-y-6" ref={containerRef} onKeyDown={handleKeyDown}>
       <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
         <h3 className="text-xl font-black text-emerald-600 flex items-center gap-2">
           <i className="fas fa-file-invoice-dollar"></i> {t.title}
@@ -307,6 +351,7 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
                     <button 
                       onClick={() => removeFromCart(item.id)} 
                       className="text-rose-500 hover:text-rose-700 p-1"
+                      tabIndex={-1}
                     >
                       <i className="fas fa-trash-can text-xs"></i>
                     </button>
