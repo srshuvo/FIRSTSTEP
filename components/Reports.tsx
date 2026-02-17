@@ -142,6 +142,13 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
     return filteredLogs.reduce((acc, log) => acc + Math.abs(log.totalPrice), 0);
   }, [filteredLogs]);
 
+  const totalQuantity = useMemo(() => {
+    return filteredLogs.reduce((acc, log) => {
+      const qty = parseFloat(log.quantity);
+      return isNaN(qty) ? acc : acc + qty;
+    }, 0);
+  }, [filteredLogs]);
+
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingLog.type === 'stockIn') {
@@ -256,8 +263,11 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
             {filteredLogs.length > 0 && (
               <tfoot className="bg-gray-50 border-t-2 border-black font-black">
                 <tr>
-                  <td colSpan={5} className="p-4 text-[11px] uppercase tracking-widest text-gray-800 text-right">
+                  <td colSpan={4} className="p-4 text-[11px] uppercase tracking-widest text-gray-800 text-right">
                     {t.grandTotal}
+                  </td>
+                  <td className="p-4 font-black text-emerald-800 text-center">
+                    {totalQuantity}
                   </td>
                   <td className="p-4 text-right text-lg text-emerald-800">
                     ৳{totalAmount.toLocaleString()}
