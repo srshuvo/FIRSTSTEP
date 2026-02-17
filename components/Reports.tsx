@@ -18,6 +18,7 @@ interface ReportsProps {
 const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockOut, onUpdateStockIn, onUpdateStockOut, onDeletePayment, onUpdatePayment, onDeleteLedgerEntry, onUpdateLedgerEntry, lang }) => {
   const [filter, setFilter] = useState({
     type: 'all',
+    categoryId: 'all',
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0]
   });
@@ -57,6 +58,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
   const t = {
     filterTitle: lang === 'bn' ? 'রিপোর্ট ফিল্টার (Alt+S)' : 'Report Filters (Alt+S)',
     reportType: lang === 'bn' ? 'লেনদেনের ধরন' : 'Transaction Type',
+    category: lang === 'bn' ? 'ক্যাটাগরি' : 'Category',
     start: lang === 'bn' ? 'শুরুর তারিখ' : 'Start Date',
     end: lang === 'bn' ? 'শেষ তারিখ' : 'End Date',
     history: lang === 'bn' ? 'লেনদেন হিস্টোরি' : 'Transaction History',
@@ -66,7 +68,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
     qty: lang === 'bn' ? 'পরিমাণ' : 'Qty',
     total: lang === 'bn' ? 'টাকার পরিমাণ' : 'Amount',
     discount: lang === 'bn' ? 'ছাড়' : 'Disc.',
-    all: lang === 'bn' ? 'সব লেনদেন' : 'All Transactions',
+    all: lang === 'bn' ? 'সব' : 'All',
     buyLabel: lang === 'bn' ? 'কেনা' : 'Purchase',
     sellLabel: lang === 'bn' ? 'বিক্রি' : 'Sale',
     returnLabel: lang === 'bn' ? 'ফেরত' : 'Return',
@@ -79,42 +81,66 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
     cancel: lang === 'bn' ? 'বাতিল' : 'Cancel',
     save: lang === 'bn' ? 'সেভ করুন' : 'Save',
     price: lang === 'bn' ? 'দর' : 'Rate',
-    paid: lang === 'bn' ? 'পরিশোধ' : 'Paid'
+    paid: lang === 'bn' ? 'পরিশোধ' : 'Paid',
+    grandTotal: lang === 'bn' ? 'সর্বমোট' : 'Grand Total'
   };
 
   const filteredLogs = useMemo(() => {
     let combined: any[] = [];
+    
+    // Process Stock In
     if (filter.type === 'all' || filter.type === 'stockIn') {
-      combined.push(...data.stockInLogs.map(l => ({ 
-        ...l, typeLabel: t.buyLabel, type: 'stockIn', colorClass: 'bg-indigo-100 text-indigo-700 border-indigo-200',
-        partyName: data.suppliers.find(s => s.id === l.supplierId)?.name || 'N/A'
-      })));
+      data.stockInLogs.forEach(l => {
+        const prod = data.products.find(p => p.id === l.productId);
+        if (filter.categoryId === 'all' || prod?.categoryId === filter.categoryId) {
+          combined.push({ 
+            ...l, typeLabel: t.buyLabel, type: 'stockIn', colorClass: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+            partyName: data.suppliers.find(s => s.id === l.supplierId)?.name || 'N/A'
+          });
+        }
+      });
     }
+
+    // Process Stock Out
     if (filter.type === 'all' || filter.type === 'stockOut') {
-      combined.push(...data.stockOutLogs.map(l => {
-        const isReturn = l.billNumber?.startsWith('RET-') || l.dueAdded < 0;
-        return {
-          ...l, typeLabel: isReturn ? t.returnLabel : t.sellLabel, type: 'stockOut',
-          colorClass: isReturn ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200',
-          partyName: data.customers.find(c => c.id === l.customerId)?.name || 'N/A'
-        };
-      }));
+      data.stockOutLogs.forEach(l => {
+        const prod = data.products.find(p => p.id === l.productId);
+        if (filter.categoryId === 'all' || prod?.categoryId === filter.categoryId) {
+          const isReturn = l.billNumber?.startsWith('RET-') || l.dueAdded < 0;
+          combined.push({
+            ...l, typeLabel: isReturn ? t.returnLabel : t.sellLabel, type: 'stockOut',
+            colorClass: isReturn ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200',
+            partyName: data.customers.find(c => c.id === l.customerId)?.name || 'N/A'
+          });
+        }
+      });
     }
-    if (filter.type === 'all' || filter.type === 'payment') {
+
+    // Process Payments (Exclude if filtering by Category as payments aren't tied to products)
+    if ((filter.type === 'all' || filter.type === 'payment') && filter.categoryId === 'all') {
       combined.push(...data.paymentLogs.map(l => ({
         ...l, typeLabel: t.paymentLabel, type: 'payment', productName: l.note || (lang === 'bn' ? 'পেমেন্ট রিসিভ' : 'Payment Received'),
         productUnit: '', quantity: '-', totalPrice: l.amount, colorClass: 'bg-amber-100 text-amber-700 border-amber-200',
         partyName: data.customers.find(c => c.id === l.customerId)?.name || 'N/A'
       })));
     }
-    if ((filter.type === 'all' || filter.type === 'expense') && data.ledgerEntries) {
+
+    // Process Expenses (Exclude if filtering by Category as expenses aren't tied to products)
+    if ((filter.type === 'all' || filter.type === 'expense') && filter.categoryId === 'all' && data.ledgerEntries) {
       combined.push(...data.ledgerEntries.map(l => ({
         ...l, typeLabel: t.expenseLabel, type: 'expense', productName: l.description, productUnit: '', quantity: '-',
         totalPrice: l.amount, colorClass: 'bg-rose-100 text-rose-700 border-rose-200', partyName: l.name || 'N/A'
       })));
     }
-    return combined.filter(l => l.date >= filter.startDate && l.date <= filter.endDate).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return combined
+      .filter(l => l.date >= filter.startDate && l.date <= filter.endDate)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [data, filter, lang]);
+
+  const totalAmount = useMemo(() => {
+    return filteredLogs.reduce((acc, log) => acc + Math.abs(log.totalPrice), 0);
+  }, [filteredLogs]);
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,11 +162,11 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 no-print">
         <h3 className="text-lg font-black text-emerald-900 mb-4 flex items-center gap-2"><i className="fas fa-sliders text-emerald-600"></i> {t.filterTitle}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.reportType}</label>
-            <select ref={filterSelectRef} value={filter.type} onChange={e => setFilter({ ...filter, type: e.target.value })} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200">
-              <option value="all">{t.all}</option>
+            <select ref={filterSelectRef} value={filter.type} onChange={e => setFilter({ ...filter, type: e.target.value })} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200 text-xs">
+              <option value="all">{lang === 'bn' ? 'সব লেনদেন' : 'All Transactions'}</option>
               <option value="stockIn">{t.buyLabel}</option>
               <option value="stockOut">{t.sellLabel}</option>
               <option value="payment">{t.paymentLabel}</option>
@@ -148,15 +174,22 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
             </select>
           </div>
           <div>
+            <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.category}</label>
+            <select value={filter.categoryId} onChange={e => setFilter({ ...filter, categoryId: e.target.value })} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200 text-xs">
+              <option value="all">{t.all}</option>
+              {data.categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+            </select>
+          </div>
+          <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.start}</label>
-            <input type="date" value={filter.startDate} onChange={e => setFilter({...filter, startDate: e.target.value})} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200" />
+            <input type="date" value={filter.startDate} onChange={e => setFilter({...filter, startDate: e.target.value})} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200 text-xs" />
           </div>
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.end}</label>
-            <input type="date" value={filter.endDate} onChange={e => setFilter({...filter, endDate: e.target.value})} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200" />
+            <input type="date" value={filter.endDate} onChange={e => setFilter({...filter, endDate: e.target.value})} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200 text-xs" />
           </div>
           <div className="flex items-end">
-            <button onClick={() => window.print()} className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-black hover:bg-emerald-700 transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/10">
+            <button onClick={() => window.print()} className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-black hover:bg-emerald-700 transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/10 text-xs">
               <i className="fas fa-file-export"></i> {t.print}
             </button>
           </div>
@@ -166,7 +199,10 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-area">
         <div className="hidden print:block p-8 text-center border-b-2 border-emerald-500 bg-emerald-50/10">
            <h2 className="text-2xl font-black text-emerald-900 tracking-tighter uppercase">FIRST STEP - {t.history}</h2>
-           <p className="text-[10px] font-bold text-gray-500 mt-1">Report Generated: {new Date().toLocaleDateString()}</p>
+           <div className="flex justify-center gap-4 mt-2">
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{t.category}: {filter.categoryId === 'all' ? t.all : data.categories.find(c => c.id === filter.categoryId)?.name}</p>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Date: {filter.startDate} to {filter.endDate}</p>
+           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -217,6 +253,19 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
                 </tr>
               ))}
             </tbody>
+            {filteredLogs.length > 0 && (
+              <tfoot className="bg-gray-50 border-t-2 border-black font-black">
+                <tr>
+                  <td colSpan={5} className="p-4 text-[11px] uppercase tracking-widest text-gray-800 text-right">
+                    {t.grandTotal}
+                  </td>
+                  <td className="p-4 text-right text-lg text-emerald-800">
+                    ৳{totalAmount.toLocaleString()}
+                  </td>
+                  <td className="no-print"></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
           {filteredLogs.length === 0 && <div className="p-20 text-center"><p className="text-gray-400 font-black italic">{lang === 'bn' ? 'কোনো ডাটা পাওয়া যায়নি' : 'No data'}</p></div>}
         </div>
