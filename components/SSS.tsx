@@ -48,6 +48,11 @@ const SSS: React.FC<SSSProps> = ({ data, onAdd, onUpdate, onDelete, lang }) => {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [data.ledgerEntries, searchTerm, startDate, endDate]);
 
+  const uniqueDescriptions = useMemo(() => {
+    const descs = (data.ledgerEntries || []).map(e => e.description).filter(d => d && d.trim() !== '');
+    return Array.from(new Set(descs)).sort();
+  }, [data.ledgerEntries]);
+
   const totalExpense = useMemo(() => filtered.reduce((acc, curr) => acc + (curr.amount || 0), 0), [filtered]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -145,7 +150,19 @@ const SSS: React.FC<SSSProps> = ({ data, onAdd, onUpdate, onDelete, lang }) => {
               <h3 className="text-xl font-black text-indigo-900">{editingEntry ? 'রেকর্ড এডিট' : 'নতুন এন্ট্রি'}</h3>
               <div className="space-y-4">
                  <input type="date" required name="date" defaultValue={editingEntry?.date || new Date().toISOString().split('T')[0]} className="w-full p-4 bg-gray-50 border rounded-2xl font-bold" />
-                 <input required name="description" defaultValue={editingEntry?.description || ''} placeholder="বিবরণ" className="w-full p-4 bg-gray-50 border rounded-2xl font-bold" />
+                 <input 
+                    required 
+                    list="desc-suggestions"
+                    name="description" 
+                    defaultValue={editingEntry?.description || ''} 
+                    placeholder="বিবরণ" 
+                    className="w-full p-4 bg-gray-50 border rounded-2xl font-bold" 
+                 />
+                 <datalist id="desc-suggestions">
+                    {uniqueDescriptions.map((d, i) => (
+                      <option key={i} value={d} />
+                    ))}
+                 </datalist>
                  <input name="name" defaultValue={editingEntry?.name || ''} placeholder="নাম/ক্রেতা" className="w-full p-4 bg-gray-50 border rounded-2xl font-bold" />
                  <input type="number" required name="amount" defaultValue={editingEntry?.amount || ''} placeholder="টাকার পরিমাণ" className="w-full p-4 bg-gray-50 border rounded-2xl font-bold text-2xl" />
               </div>

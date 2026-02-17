@@ -111,6 +111,12 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
     totalAdvance: data.customers.filter(c => c.dueAmount < 0).reduce((sum, c) => sum + Math.abs(c.dueAmount), 0)
   }), [data.customers]);
 
+  // Extract unique notes for suggestions
+  const uniqueNotes = useMemo(() => {
+    const notes = data.paymentLogs.map(l => l.note).filter(n => n && n.trim() !== '');
+    return Array.from(new Set(notes)).sort();
+  }, [data.paymentLogs]);
+
   const currentHistoryCustomer = useMemo(() => {
     return data.customers.find(c => c.id === historyCustomerId) || null;
   }, [historyCustomerId, data.customers]);
@@ -370,7 +376,21 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                       <input type="date" value={paymentFormData.date} onChange={e => setPaymentFormData({...paymentFormData, date: e.target.value})} className="w-full p-3 bg-gray-50 border rounded-xl font-bold" />
                    </div>
                 </div>
-                <input placeholder={t.note} value={paymentFormData.note} onChange={e => setPaymentFormData({...paymentFormData, note: e.target.value})} className="w-full p-4 bg-gray-50 border rounded-2xl font-bold outline-none" />
+                <div>
+                  <label className="text-[10px] font-black text-gray-400 uppercase ml-1">{t.note}</label>
+                  <input 
+                    list="note-suggestions" 
+                    placeholder={t.note} 
+                    value={paymentFormData.note} 
+                    onChange={e => setPaymentFormData({...paymentFormData, note: e.target.value})} 
+                    className="w-full p-4 bg-gray-50 border rounded-2xl font-bold outline-none" 
+                  />
+                  <datalist id="note-suggestions">
+                    {uniqueNotes.map((note, idx) => (
+                      <option key={idx} value={note} />
+                    ))}
+                  </datalist>
+                </div>
              </div>
              <div className="flex gap-4 pt-4">
                 <button type="button" onClick={() => setShowPayModal(false)} className="flex-1 py-4 bg-gray-100 rounded-2xl font-black uppercase text-xs">{t.cancel}</button>
