@@ -34,7 +34,9 @@ const SSS: React.FC<SSSProps> = ({ data, onAdd, onUpdate, onDelete, lang }) => {
     title: lang === 'bn' ? 'অনন্যা ব্যায় খতিয়ান (Expense Ledger)' : 'Expense Ledger',
     newBtn: lang === 'bn' ? 'নতুন এন্ট্রি' : 'New Entry',
     printBtn: lang === 'bn' ? 'রিপোর্ট প্রিন্ট' : 'Print',
-    total: lang === 'bn' ? 'মোট খরচ' : 'Total Expense'
+    total: lang === 'bn' ? 'মোট খরচ' : 'Total Expense',
+    filterDateStart: lang === 'bn' ? 'শুরুর তারিখ' : 'Start Date',
+    filterDateEnd: lang === 'bn' ? 'শেষ তারিখ' : 'End Date'
   };
 
   const filtered = useMemo(() => {
@@ -69,6 +71,8 @@ const SSS: React.FC<SSSProps> = ({ data, onAdd, onUpdate, onDelete, lang }) => {
     setShowModal(false);
   };
 
+  const isFiltered = startDate !== '' || endDate !== '';
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start gap-4 no-print">
@@ -83,28 +87,55 @@ const SSS: React.FC<SSSProps> = ({ data, onAdd, onUpdate, onDelete, lang }) => {
       </div>
 
       <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 no-print search-container">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           <div className="md:col-span-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">{lang === 'bn' ? 'বিবরণ দিয়ে খুঁজুন' : 'Search by Description'}</label>
             <input 
               ref={searchInputRef}
               type="text" 
               value={searchTerm} 
               onChange={e => setSearchTerm(e.target.value)} 
-              className="w-full p-2.5 border rounded-xl font-bold bg-gray-50 outline-none" 
+              className="w-full p-2.5 border rounded-xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-indigo-500" 
               placeholder={lang === 'bn' ? 'খুঁজুন... (Alt+S)' : 'Search... (Alt+S)'} 
             />
           </div>
-          <div className="bg-rose-50 p-2.5 rounded-xl border border-rose-100 flex justify-between items-center md:col-start-4">
+          <div>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">{t.filterDateStart}</label>
+            <input 
+              type="date" 
+              value={startDate} 
+              onChange={e => setStartDate(e.target.value)} 
+              className="w-full p-2.5 border rounded-xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-indigo-500 text-xs" 
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">{t.filterDateEnd}</label>
+            <input 
+              type="date" 
+              value={endDate} 
+              onChange={e => setEndDate(e.target.value)} 
+              className="w-full p-2.5 border rounded-xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-indigo-500 text-xs" 
+            />
+          </div>
+          <div className="bg-rose-50 p-2.5 rounded-xl border border-rose-100 flex justify-between items-center">
              <span className="text-[10px] font-black uppercase text-rose-400">{t.total}</span>
              <span className="text-sm font-black text-rose-600">৳{totalExpense.toLocaleString()}</span>
           </div>
         </div>
       </div>
 
+      {isFiltered && (
+        <div className="bg-indigo-600 text-white p-2 rounded-xl text-center text-[10px] font-black uppercase tracking-[0.2em] shadow-lg animate-pulse no-print">
+           <i className="fas fa-history mr-2"></i> {startDate || 'শুরু'} থেকে {endDate || 'বর্তমান'} তারিখের রিপোর্ট
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-area">
         <div className="hidden print:block p-8 text-center border-b-2 border-rose-500 bg-rose-50">
            <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">FIRST STEP - {t.title}</h2>
-           <p className="text-[10px] font-bold text-gray-500 mt-1">{new Date().toLocaleDateString()}</p>
+           <p className="text-[10px] font-bold text-gray-500 mt-1">
+             {isFiltered ? (lang === 'bn' ? `${startDate} থেকে ${endDate} তারিখের রিপোর্ট` : `Report from ${startDate} to ${endDate}`) : new Date().toLocaleDateString()}
+           </p>
            <div className="w-16 h-1 bg-rose-500 mx-auto mt-2 rounded-full"></div>
         </div>
 
@@ -127,8 +158,8 @@ const SSS: React.FC<SSSProps> = ({ data, onAdd, onUpdate, onDelete, lang }) => {
                 <td className="px-6 py-3 text-right font-black text-rose-600">৳{entry.amount.toLocaleString()}</td>
                 <td className="px-6 py-3 text-center no-print">
                    <div className="flex justify-center gap-1">
-                      <button onClick={() => { setEditingEntry(entry); setShowModal(true); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><i className="fas fa-edit"></i></button>
-                      <button onClick={() => { if(confirm('Delete?')) onDelete(entry.id) }} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><i className="fas fa-trash-can"></i></button>
+                      <button onClick={() => { setEditingEntry(entry); setShowModal(true); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition"><i className="fas fa-edit"></i></button>
+                      <button onClick={() => { if(confirm('Delete?')) onDelete(entry.id) }} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"><i className="fas fa-trash-can"></i></button>
                    </div>
                 </td>
               </tr>
@@ -142,33 +173,34 @@ const SSS: React.FC<SSSProps> = ({ data, onAdd, onUpdate, onDelete, lang }) => {
              </tr>
           </tfoot>
         </table>
+        {filtered.length === 0 && <div className="p-10 text-center text-gray-400 italic font-bold">{lang === 'bn' ? 'কোনো এন্ট্রি পাওয়া যায়নি' : 'No entries found'}</div>}
       </div>
 
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 no-print">
-           <form ref={formRef} onSubmit={handleSubmit} className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md space-y-6">
+           <form ref={formRef} onSubmit={handleSubmit} className="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-md space-y-6 animate-scale-in">
               <h3 className="text-xl font-black text-indigo-900">{editingEntry ? 'রেকর্ড এডিট' : 'নতুন এন্ট্রি'}</h3>
               <div className="space-y-4">
-                 <input type="date" required name="date" defaultValue={editingEntry?.date || new Date().toISOString().split('T')[0]} className="w-full p-4 bg-gray-50 border rounded-2xl font-bold" />
+                 <input type="date" required name="date" defaultValue={editingEntry?.date || new Date().toISOString().split('T')[0]} className="w-full p-4 bg-gray-50 border rounded-2xl font-bold outline-none" />
                  <input 
                     required 
                     list="desc-suggestions"
                     name="description" 
                     defaultValue={editingEntry?.description || ''} 
                     placeholder="বিবরণ" 
-                    className="w-full p-4 bg-gray-50 border rounded-2xl font-bold" 
+                    className="w-full p-4 bg-gray-50 border rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500" 
                  />
                  <datalist id="desc-suggestions">
                     {uniqueDescriptions.map((d, i) => (
                       <option key={i} value={d} />
                     ))}
                  </datalist>
-                 <input name="name" defaultValue={editingEntry?.name || ''} placeholder="নাম/ক্রেতা" className="w-full p-4 bg-gray-50 border rounded-2xl font-bold" />
-                 <input type="number" required name="amount" defaultValue={editingEntry?.amount || ''} placeholder="টাকার পরিমাণ" className="w-full p-4 bg-gray-50 border rounded-2xl font-bold text-2xl" />
+                 <input name="name" defaultValue={editingEntry?.name || ''} placeholder="নাম/ক্রেতা" className="w-full p-4 bg-gray-50 border rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-500" />
+                 <input type="number" required name="amount" defaultValue={editingEntry?.amount || ''} placeholder="টাকার পরিমাণ" className="w-full p-4 bg-gray-50 border rounded-2xl font-bold text-2xl outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
               <div className="flex gap-4 pt-4">
                  <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 bg-gray-100 rounded-2xl font-black uppercase text-xs">বাতিল</button>
-                 <button type="submit" className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg">সেভ</button>
+                 <button type="submit" className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg transition active:scale-95">সেভ</button>
               </div>
            </form>
         </div>

@@ -8,10 +8,11 @@ interface TransactionsProps {
   data: AppData;
   onRecordPurchase: (entry: StockIn) => void;
   onRecordSale: (entry: StockOut) => void;
+  onNotify: (msg: string, type?: 'success' | 'error' | 'warning') => void;
   lang: 'bn' | 'en';
 }
 
-const Transactions: React.FC<TransactionsProps> = ({ data, onRecordPurchase, onRecordSale, lang }) => {
+const Transactions: React.FC<TransactionsProps> = ({ data, onRecordPurchase, onRecordSale, onNotify, lang }) => {
   const [activeTab, setActiveTab] = useState<'sell' | 'purchase'>('sell');
 
   const t = {
@@ -42,9 +43,9 @@ const Transactions: React.FC<TransactionsProps> = ({ data, onRecordPurchase, onR
 
       <div className="animate-scale-in">
         {activeTab === 'sell' ? (
-          <Sales data={data} onRecord={onRecordSale} lang={lang} />
+          <Sales data={data} onRecord={onRecordSale} onNotify={onNotify} lang={lang} />
         ) : (
-          <Purchase data={data} onRecord={onRecordPurchase} lang={lang} />
+          <Purchase data={data} onRecord={onRecordPurchase} onNotify={onNotify} lang={lang} />
         )}
       </div>
     </div>

@@ -82,13 +82,10 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         const isSpareParts = cat?.name.toLowerCase().includes('spare parts') || cat?.name.includes('স্পেয়ার পার্টস');
         
         if (isSpareParts) {
-            // ৪০% লাভের লজিক বজায় রাখা হয়েছে
             profit = (log.unitPrice * log.quantity) * 0.4;
         } else {
-            // গ্রস প্রফিট = (বিক্রি মূল্য - কেনা মূল্য) * পরিমাণ
             profit = (log.unitPrice - (p.costPrice || 0)) * log.quantity;
         }
-        // বিক্রয়ের সময় দেওয়া সরাসরি ডিসকাউন্ট বিয়োগ
         profit -= (log.discount || 0);
     }
 
@@ -100,25 +97,16 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
     const payments = getFilteredLogs(data.paymentLogs || []);
     const ledgerEntries = getFilteredLogs(data.ledgerEntries || []);
 
-    // মোট বিক্রি (রিটার্ন শনাক্ত করে বিয়োগ করা হয়েছে)
     const totalSales = sOut.reduce((acc, l) => {
       const isReturn = l.billNumber?.startsWith('RET-') || l.dueAdded < 0;
       return isReturn ? acc - l.totalPrice : acc + l.totalPrice;
     }, 0);
 
-    // গ্রস লাভ
     const grossProfit = sOut.reduce((acc, l) => acc + calculateProfit(l), 0);
-    
-    // সাধারণ খরচ (Expenses)
     const totalExpenses = ledgerEntries.reduce((acc, l) => acc + (l.amount || 0), 0);
-    
-    // পেমেন্ট নেওয়ার সময় দেওয়া অতিরিক্ত ডিসকাউন্ট (Settlement Discount)
     const discountsGiven = payments.reduce((acc, l) => acc + (l.discount || 0), 0);
-    
-    // নীট লাভ
     const netProfit = grossProfit - totalExpenses - discountsGiven;
 
-    // Snapshot Metrics (এগুলো সবসময় বর্তমান মোট ডাটা দেখাবে)
     const totalDue = data.customers.reduce((acc, c) => acc + (c.dueAmount > 0 ? c.dueAmount : 0), 0);
     const totalStockValue = data.products.reduce((acc, p) => acc + (p.stock * p.costPrice), 0);
 
@@ -201,14 +189,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
     return { en: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(now), bn: getBongabdo(), ar: getHijri() };
   }, [currentTime]);
 
-  const formatClock = (date: Date) => {
-    const hours = (date.getHours() % 12 || 12).toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    const seconds = date.getSeconds().toString().padStart(2, '0');
-    const ampm = date.getHours() >= 12 ? 'PM' : 'AM';
-    return { hours, minutes, seconds, ampm };
-  };
-
   const clock = formatClock(currentTime);
 
   const t = {
@@ -223,6 +203,23 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
     bngCal: lang === 'bn' ? 'বাংলা' : 'Bengali',
     hijCal: lang === 'bn' ? 'হিজরি' : 'Hijri'
   };
+
+  const getViewingMessage = () => {
+    if (dateFilter === 'today') return `${todayStr} তারিখের রিপোর্ট`;
+    if (dateFilter === 'custom') return `${customRange.start || '...'} থেকে ${customRange.end || '...'} তারিখের রিপোর্ট`;
+    const period = dateFilter === '7days' ? (lang === 'bn' ? '৭ দিনের' : '7 days') : (lang === 'bn' ? '১ মাসের' : '1 month');
+    return `গত ${period} রিপোর্ট`;
+  };
+
+  const showBanner = dateFilter !== 'today';
+
+  function formatClock(date: Date) {
+    const hours = (date.getHours() % 12 || 12).toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    const ampm = date.getHours() >= 12 ? 'PM' : 'AM';
+    return { hours, minutes, seconds, ampm };
+  }
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-scale-in">
@@ -278,6 +275,12 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         ))}
       </div>
 
+      {showBanner && (
+        <div className="bg-emerald-900 text-white p-2 rounded-xl text-center text-[10px] font-black uppercase tracking-[0.2em] shadow-lg animate-pulse no-print">
+           <i className="fas fa-history mr-2"></i> {getViewingMessage()}
+        </div>
+      )}
+
       {dateFilter === 'custom' && (
         <div className="flex flex-wrap gap-4 p-4 bg-white rounded-2xl border border-gray-100 no-print animate-scale-in">
            <div className="flex flex-col">
@@ -299,7 +302,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang }) => {
         <KPICard title={t.stockVal} value={`৳${stats.totalStockValue.toLocaleString()}`} icon="fa-boxes-stacked" color="indigo" />
       </section>
 
-      {/* Low Stock Alerts */}
       {lowStockItems.length > 0 && (
         <div className="bg-rose-50 border border-rose-100 p-4 sm:p-6 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm">
            <h3 className="font-black text-rose-700 text-xs sm:text-sm uppercase tracking-widest flex items-center gap-3 mb-4">

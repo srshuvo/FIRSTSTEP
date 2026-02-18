@@ -25,6 +25,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
 
   const [editingLog, setEditingLog] = useState<any | null>(null);
   const [editFormData, setEditFormData] = useState<any>({});
+  const [isSearched, setIsSearched] = useState(false);
   
   const filterSelectRef = useRef<HTMLSelectElement>(null);
   const editFormRef = useRef<HTMLFormElement>(null);
@@ -172,7 +173,7 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.reportType}</label>
-            <select ref={filterSelectRef} value={filter.type} onChange={e => setFilter({ ...filter, type: e.target.value })} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200 text-xs">
+            <select ref={filterSelectRef} value={filter.type} onChange={e => { setFilter({ ...filter, type: e.target.value }); setIsSearched(true); }} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200 text-xs">
               <option value="all">{lang === 'bn' ? 'সব লেনদেন' : 'All Transactions'}</option>
               <option value="stockIn">{t.buyLabel}</option>
               <option value="stockOut">{t.sellLabel}</option>
@@ -182,18 +183,18 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
           </div>
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.category}</label>
-            <select value={filter.categoryId} onChange={e => setFilter({ ...filter, categoryId: e.target.value })} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200 text-xs">
+            <select value={filter.categoryId} onChange={e => { setFilter({ ...filter, categoryId: e.target.value }); setIsSearched(true); }} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200 text-xs">
               <option value="all">{t.all}</option>
               {data.categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.start}</label>
-            <input type="date" value={filter.startDate} onChange={e => setFilter({...filter, startDate: e.target.value})} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200 text-xs" />
+            <input type="date" value={filter.startDate} onChange={e => { setFilter({...filter, startDate: e.target.value}); setIsSearched(true); }} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200 text-xs" />
           </div>
           <div>
             <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">{t.end}</label>
-            <input type="date" value={filter.endDate} onChange={e => setFilter({...filter, endDate: e.target.value})} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200 text-xs" />
+            <input type="date" value={filter.endDate} onChange={e => { setFilter({...filter, endDate: e.target.value}); setIsSearched(true); }} className="w-full border p-2.5 rounded-xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50 border-gray-200 text-xs" />
           </div>
           <div className="flex items-end">
             <button onClick={() => window.print()} className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-black hover:bg-emerald-700 transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/10 text-xs">
@@ -202,6 +203,12 @@ const Reports: React.FC<ReportsProps> = ({ data, onDeleteStockIn, onDeleteStockO
           </div>
         </div>
       </div>
+
+      {isSearched && (
+        <div className="bg-emerald-900 text-white p-2 rounded-xl text-center text-[10px] font-black uppercase tracking-[0.2em] shadow-lg animate-pulse no-print">
+           <i className="fas fa-history mr-2"></i> {filter.startDate} থেকে {filter.endDate} তারিখের রিপোর্ট
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-area">
         <div className="hidden print:block p-8 text-center border-b-2 border-emerald-500 bg-emerald-50/10">

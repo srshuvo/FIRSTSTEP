@@ -21,7 +21,9 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
   const [editingCat, setEditingCat] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCatId, setSelectedCatId] = useState<string>('all');
+  const [asOfDate, setAsOfDate] = useState(new Date().toISOString().split('T')[0]);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string; type: 'product' | 'category' } | null>(null);
+  
   const formRef = useRef<HTMLFormElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,19 +50,57 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
 
   const [catFormData, setCatFormData] = useState({ name: '' });
 
+  // Helper function to calculate stock at a specific date
+  const calculateHistoricalStock = (product: Product, targetDate: string) => {
+    let currentStock = product.stock;
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (targetDate >= today) return currentStock;
+
+    // We need to reverse the logs from today back to targetDate
+    // StockDate = StockToday - (StockIn after targetDate) + (StockOut after targetDate)
+    
+    // Process Stock In logs
+    data.stockInLogs.forEach(log => {
+      if (log.productId === product.id && log.date > targetDate) {
+        currentStock -= log.quantity;
+      }
+    });
+
+    // Process Stock Out logs (Sales and Returns)
+    data.stockOutLogs.forEach(log => {
+      if (log.productId === product.id && log.date > targetDate) {
+        const isReturn = log.billNumber?.startsWith('RET-') || log.dueAdded < 0;
+        if (isReturn) {
+          // A return increased current stock, so to go back we subtract it
+          currentStock -= log.quantity;
+        } else {
+          // A sale decreased current stock, so to go back we add it
+          currentStock += log.quantity;
+        }
+      }
+    });
+
+    return currentStock;
+  };
+
   const filteredProducts = useMemo(() => {
     return data.products
+      .map(p => ({
+        ...p,
+        displayStock: calculateHistoricalStock(p, asOfDate)
+      }))
       .filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCat = selectedCatId === 'all' ? true : (selectedCatId === 'none' ? !p.categoryId : p.categoryId === selectedCatId);
         return matchesSearch && matchesCat;
       })
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [data.products, searchTerm, selectedCatId]);
+  }, [data.products, data.stockInLogs, data.stockOutLogs, searchTerm, selectedCatId, asOfDate]);
 
   const currentStockStats = useMemo(() => {
-    const totalVal = filteredProducts.reduce((sum, p) => sum + (p.stock * p.costPrice), 0);
-    const totalStock = filteredProducts.reduce((sum, p) => sum + p.stock, 0);
+    const totalVal = filteredProducts.reduce((sum, p) => sum + (p.displayStock * p.costPrice), 0);
+    const totalStock = filteredProducts.reduce((sum, p) => sum + p.displayStock, 0);
     return { totalVal, totalStock };
   }, [filteredProducts]);
 
@@ -92,8 +132,17 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
     if (catId === 'all') prods = data.products;
     else if (catId === 'none') prods = data.products.filter(p => !p.categoryId);
     else prods = data.products.filter(p => p.categoryId === catId);
-    const value = prods.reduce((sum, p) => sum + (p.stock * p.costPrice), 0);
-    return { count: prods.length, totalStock: prods.reduce((sum, p) => sum + p.stock, 0), value };
+    
+    // Summary based on selected date
+    let value = 0;
+    let totalStock = 0;
+    prods.forEach(p => {
+      const histStock = calculateHistoricalStock(p, asOfDate);
+      totalStock += histStock;
+      value += (histStock * p.costPrice);
+    });
+
+    return { count: prods.length, totalStock, value };
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -116,6 +165,9 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
   const handlePrint = () => {
     window.print();
   };
+
+  const isToday = asOfDate === new Date().toISOString().split('T')[0];
+  const showBanner = !isToday;
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
@@ -149,7 +201,7 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
 
       <div className="flex-1 space-y-4">
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 no-print search-container">
-          <div className="relative w-full md:w-80">
+          <div className="relative w-full md:w-64">
             <i className="fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
             <input 
               ref={searchInputRef}
@@ -157,34 +209,56 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
               placeholder={lang === 'bn' ? 'খুঁজুন... (Alt+S)' : 'Search... (Alt+S)'} 
               value={searchTerm} 
               onChange={e => setSearchTerm(e.target.value)} 
-              className="w-full pl-10 pr-4 py-2.5 border rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold" 
+              className="w-full pl-10 pr-4 py-2.5 border rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-xs" 
             />
           </div>
+          
+          <div className="relative w-full md:w-56 flex flex-col">
+            <label className="text-[8px] font-black uppercase text-emerald-600 mb-1 ml-1">{lang === 'bn' ? 'তারিখ অনুযায়ী স্টক' : 'Stock As Of'}</label>
+            <input 
+              type="date" 
+              value={asOfDate} 
+              onChange={e => setAsOfDate(e.target.value)} 
+              className={`w-full px-4 py-2 border rounded-2xl font-bold outline-none text-xs ${!isToday ? 'bg-emerald-50 border-emerald-200 ring-2 ring-emerald-500/20' : 'bg-white'}`}
+            />
+          </div>
+
           <div className="flex gap-2 w-full md:w-auto">
-            <button onClick={handlePrint} className="flex-1 bg-gray-50 text-gray-600 px-5 py-2.5 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-gray-100 hover:bg-gray-100 transition flex items-center justify-center gap-2"><i className="fas fa-print"></i> {lang === 'bn' ? 'প্রিন্ট রিপোর্ট' : 'Print'}</button>
+            <button onClick={handlePrint} className="flex-1 bg-gray-50 text-gray-600 px-5 py-2.5 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-gray-100 hover:bg-gray-100 transition flex items-center justify-center gap-2"><i className="fas fa-print"></i> {lang === 'bn' ? 'প্রিন্ট' : 'Print'}</button>
             <button onClick={() => { setEditing(null); setFormData({ name: '', categoryId: '', stock: 0, unit: 'Pcs', costPrice: 0, salePrice: 0, lowStockThreshold: 10 }); setShowModal(true); }} className="flex-1 bg-emerald-600 text-white px-6 py-2.5 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg hover:bg-emerald-700 transition active:scale-95">{lang === 'bn' ? 'নতুন পণ্য' : 'Add Product'}</button>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:gap-4 no-print">
-            <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex flex-col">
-                <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-1">{lang === 'bn' ? 'মোট স্টক মূল্য' : 'Stock Value'}</span>
-                <span className="text-lg font-black text-emerald-700">৳{currentStockStats.totalVal.toLocaleString()}</span>
+            <div className={`p-4 rounded-2xl border flex flex-col transition-colors ${!isToday ? 'bg-indigo-50 border-indigo-100' : 'bg-emerald-50 border-emerald-100'}`}>
+                <span className={`text-[9px] font-black uppercase tracking-widest mb-1 ${!isToday ? 'text-indigo-400' : 'text-emerald-400'}`}>
+                    {lang === 'bn' ? 'তারিখ ভিত্তিক স্টক মূল্য' : 'Stock Value on Date'}
+                </span>
+                <span className={`text-lg font-black ${!isToday ? 'text-indigo-700' : 'text-emerald-700'}`}>৳{currentStockStats.totalVal.toLocaleString()}</span>
             </div>
             <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex flex-col">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{lang === 'bn' ? 'মোট মাল (স্টক)' : 'Total Stock Qty'}</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{lang === 'bn' ? 'তারিখ ভিত্তিক মোট স্টক' : 'Total Stock on Date'}</span>
                 <span className="text-lg font-black text-slate-700">{currentStockStats.totalStock} <span className="text-xs">{lang === 'bn' ? 'ইউনিট' : 'Units'}</span></span>
             </div>
         </div>
+
+        {showBanner && (
+          <div className="bg-indigo-600 text-white p-2 rounded-xl text-center text-[10px] font-black uppercase tracking-[0.2em] shadow-lg animate-pulse no-print">
+             <i className="fas fa-history mr-2"></i> {asOfDate} তারিখের রিপোর্ট
+          </div>
+        )}
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-area">
           <div className="hidden print:block p-8 text-center border-b-2 border-emerald-500 bg-emerald-50/10">
              <h2 className="text-3xl font-black text-emerald-900 tracking-tighter uppercase">FIRST STEP - STOCK REPORT</h2>
              <div className="mt-2 flex flex-col items-center">
                 <p className="text-xs font-black text-emerald-600 uppercase tracking-[0.2em] mb-1">
+                   {lang === 'bn' ? 'রিপোর্টের তারিখ: ' : 'Report Date: '} {asOfDate}
+                </p>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
                    {lang === 'bn' ? 'ক্যাটাগরি: ' : 'Category: '} {selectedCategoryName}
                 </p>
-                <div className="w-24 h-1 bg-emerald-500 rounded-full mb-4"></div>
+                <div className="w-24 h-1 bg-emerald-500 rounded-full mb-4 mt-2"></div>
              </div>
              <div className="flex justify-center gap-10 text-[11px] font-black text-slate-700 uppercase">
                 <span className="bg-white px-4 py-1 rounded-full border border-gray-200">Total Units: {currentStockStats.totalStock}</span>
@@ -196,7 +270,7 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
             <thead className="bg-gray-50 text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">
               <tr>
                 <th className="px-4 sm:px-6 py-3 sm:py-4">{lang === 'bn' ? 'পণ্যের নাম' : 'Name'}</th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4">{lang === 'bn' ? 'স্টক' : 'Stock'}</th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4">{lang === 'bn' ? 'স্টক পরিমাণ' : 'Stock'}</th>
                 <th className="px-4 sm:px-6 py-3 sm:py-4">{lang === 'bn' ? 'কেনা দাম' : 'Cost'}</th>
                 <th className="px-4 sm:px-6 py-3 sm:py-4">{lang === 'bn' ? 'স্টক ভ্যালু' : 'Stock Val'}</th>
                 <th className="px-4 sm:px-6 py-3 sm:py-4">{lang === 'bn' ? 'বিক্রি দাম' : 'Sale Price'}</th>
@@ -213,12 +287,12 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
                     </p>
                   </td>
                   <td className="px-4 sm:px-6 py-3">
-                    <span className={`px-2 py-0.5 rounded-full font-black text-[10px] border ${p.stock <= (p.lowStockThreshold || 10) ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-gray-50 text-gray-700 border-gray-100'}`}>
-                      {p.stock} {p.unit}
+                    <span className={`px-2 py-0.5 rounded-full font-black text-[10px] border ${p.displayStock <= (p.lowStockThreshold || 10) ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-gray-50 text-gray-700 border-gray-100'}`}>
+                      {p.displayStock} {p.unit}
                     </span>
                   </td>
                   <td className="px-4 sm:px-6 py-3 text-gray-400 font-bold text-[10px]">৳{p.costPrice.toLocaleString()}</td>
-                  <td className="px-4 sm:px-6 py-3 font-black text-slate-700 text-[10px]">৳{(p.stock * p.costPrice).toLocaleString()}</td>
+                  <td className="px-4 sm:px-6 py-3 font-black text-slate-700 text-[10px]">৳{(p.displayStock * p.costPrice).toLocaleString()}</td>
                   <td className="px-4 sm:px-6 py-3 font-black text-emerald-600 text-[10px]">৳{p.salePrice.toLocaleString()}</td>
                   <td className="px-4 sm:px-6 py-3 text-center no-print">
                     <div className="flex justify-center gap-1">
@@ -229,7 +303,6 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
                 </tr>
               ))}
             </tbody>
-            {/* Table Footer: Clearly shows the grand totals for Multi-page support */}
             <tfoot className="border-t-4 border-black bg-gray-100 font-black">
                 <tr className="bg-gray-100">
                     <td className="px-4 sm:px-6 py-6 text-sm font-black uppercase text-gray-800">
@@ -268,7 +341,7 @@ const Inventory: React.FC<InventoryProps> = ({ data, onAdd, onUpdate, onDelete, 
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <input type="number" placeholder={lang === 'bn' ? 'কেনা দাম' : 'Cost'} value={formData.costPrice || ''} onChange={e => setFormData({...formData, costPrice: Number(e.target.value)})} className="w-full border p-3.5 rounded-2xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500" />
+                <input type="number" placeholder={lang === 'bn' ? ' কেনা দাম' : 'Cost'} value={formData.costPrice || ''} onChange={e => setFormData({...formData, costPrice: Number(e.target.value)})} className="w-full border p-3.5 rounded-2xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500" />
                 <input type="number" placeholder={lang === 'bn' ? 'বিক্রি দাম' : 'Price'} value={formData.salePrice || ''} onChange={e => setFormData({...formData, salePrice: Number(e.target.value)})} className="w-full border p-3.5 rounded-2xl font-bold bg-gray-50 outline-none focus:ring-2 focus:ring-emerald-500" />
               </div>
               <div>

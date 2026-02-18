@@ -5,6 +5,7 @@ import { AppData, StockOut } from '../types';
 interface SalesProps {
   data: AppData;
   onRecord: (entry: StockOut) => void;
+  onNotify: (msg: string, type?: 'success' | 'error' | 'warning') => void;
   lang: 'bn' | 'en';
 }
 
@@ -19,7 +20,7 @@ interface CartItem {
   total: number;
 }
 
-const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
+const Sales: React.FC<SalesProps> = ({ data, onRecord, onNotify, lang }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -115,7 +116,7 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
     if (!prod) return;
 
     if (prod.stock < itemEntry.quantity) {
-      alert(lang === 'bn' ? `স্টক কম আছে! বর্তমানে আছে: ${prod.stock}` : `Low stock! Available: ${prod.stock}`);
+      onNotify(lang === 'bn' ? `স্টক কম আছে! বর্তমানে আছে: ${prod.stock}` : `Low stock! Available: ${prod.stock}`, 'error');
       return;
     }
 
@@ -148,7 +149,7 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (cartItems.length === 0 || !mainInfo.customerId) {
-      alert(lang === 'bn' ? "কাস্টমার এবং অন্তত একটি পণ্য নির্বাচন করুন" : "Select customer and at least one product");
+      onNotify(lang === 'bn' ? "কাস্টমার এবং অন্তত একটি পণ্য নির্বাচন করুন" : "Select customer and at least one product", 'warning');
       return;
     }
 
@@ -182,7 +183,7 @@ const Sales: React.FC<SalesProps> = ({ data, onRecord, lang }) => {
       onRecord(log);
     });
 
-    alert(lang === 'bn' ? "বিক্রি সম্পন্ন হয়েছে!" : "Sale Completed!");
+    onNotify(lang === 'bn' ? "বিক্রি সম্পন্ন হয়েছে!" : "Sale Completed!", 'success');
     setCartItems([]);
     setMainInfo({
       ...mainInfo,

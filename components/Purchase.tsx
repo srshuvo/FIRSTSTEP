@@ -5,10 +5,11 @@ import { AppData, StockIn } from '../types';
 interface PurchaseProps {
   data: AppData;
   onRecord: (entry: StockIn) => void;
+  onNotify: (msg: string, type?: 'success' | 'error' | 'warning') => void;
   lang: 'bn' | 'en';
 }
 
-const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
+const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, onNotify, lang }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -99,7 +100,6 @@ const Purchase: React.FC<PurchaseProps> = ({ data, onRecord, lang }) => {
       productUnit: prod.unit,
       totalPrice: formData.quantity * formData.unitPrice
     });
-    alert(lang === 'bn' ? "সফলভাবে সংরক্ষিত!" : "Saved successfully!");
     setFormData({ ...formData, productId: '', quantity: 0, billNumber: '' });
     setSearchTerm('');
     setTimeout(() => searchInputRef.current?.focus(), 10);

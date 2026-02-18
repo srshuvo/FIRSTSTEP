@@ -18,6 +18,7 @@ interface CustomersProps {
 
 const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, onPay, onRecordReturn, onDeleteLog, onUpdateLog, onDeletePayment, onUpdatePayment, lang }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [asOfDate, setAsOfDate] = useState(new Date().toISOString().split('T')[0]);
   const [showModal, setShowModal] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -96,20 +97,48 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
     discount: lang === 'bn' ? 'ছাড় (Discount)' : 'Discount',
     note: lang === 'bn' ? 'নোট' : 'Note',
     editLogTitle: lang === 'bn' ? 'বিক্রয় এডিট' : 'Edit Sale',
-    paid: lang === 'bn' ? 'পরিশোধ' : 'Paid'
+    paid: lang === 'bn' ? 'পরিশোধ' : 'Paid',
+    searchByDate: lang === 'bn' ? 'তারিখ অনুযায়ী ব্যালেন্স' : 'Balance As Of'
   };
 
-  const filtered = data.customers
-    .filter(c => 
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      c.phone.includes(searchTerm)
-    )
-    .sort((a, b) => a.name.localeCompare(b.name, 'bn'));
+  const calculateHistoricalBalance = (customer: Customer, targetDate: string) => {
+    let balance = customer.dueAmount;
+    const today = new Date().toISOString().split('T')[0];
+    if (targetDate >= today) return balance;
+
+    // BalanceAtDate = CurrentBalance - Sum(dueAdded after targetDate) + Sum(paymentAmount+discount after targetDate)
+    data.stockOutLogs.forEach(log => {
+      if (log.customerId === customer.id && log.date > targetDate) {
+        balance -= log.dueAdded;
+      }
+    });
+
+    data.paymentLogs.forEach(pay => {
+      if (pay.customerId === customer.id && pay.date > targetDate) {
+        balance += (pay.amount + (pay.discount || 0));
+      }
+    });
+
+    return balance;
+  };
+
+  const filtered = useMemo(() => {
+    return data.customers
+      .map(c => ({
+        ...c,
+        displayBalance: calculateHistoricalBalance(c, asOfDate)
+      }))
+      .filter(c => 
+        c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        c.phone.includes(searchTerm)
+      )
+      .sort((a, b) => a.name.localeCompare(b.name, 'bn'));
+  }, [data.customers, data.stockOutLogs, data.paymentLogs, searchTerm, asOfDate]);
 
   const stats = useMemo(() => ({
-    totalDue: data.customers.filter(c => c.dueAmount > 0).reduce((sum, c) => sum + c.dueAmount, 0),
-    totalAdvance: data.customers.filter(c => c.dueAmount < 0).reduce((sum, c) => sum + Math.abs(c.dueAmount), 0)
-  }), [data.customers]);
+    totalDue: filtered.filter(c => c.displayBalance > 0).reduce((sum, c) => sum + c.displayBalance, 0),
+    totalAdvance: filtered.filter(c => c.displayBalance < 0).reduce((sum, c) => sum + Math.abs(c.displayBalance), 0)
+  }), [filtered]);
 
   // Extract unique notes for suggestions
   const uniqueNotes = useMemo(() => {
@@ -227,10 +256,13 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
     return data.products.filter(p => p.name.toLowerCase().includes(returnSearchTerm.toLowerCase())).sort((a,b) => a.name.localeCompare(b.name));
   }, [data.products, returnSearchTerm]);
 
+  const isToday = asOfDate === new Date().toISOString().split('T')[0];
+  const showBanner = !isToday;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 no-print">
-        <div className="relative w-full md:w-96 search-container">
+        <div className="relative w-full md:w-80 search-container">
           <i className="fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
           <input 
             ref={searchInputRef}
@@ -241,27 +273,44 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
             onChange={e => setSearchTerm(e.target.value)} 
           />
         </div>
+        
+        <div className="flex flex-col w-full md:w-56">
+          <label className="text-[9px] font-black uppercase text-emerald-600 mb-1 ml-1">{t.searchByDate}</label>
+          <input 
+            type="date" 
+            value={asOfDate} 
+            onChange={e => setAsOfDate(e.target.value)} 
+            className={`w-full px-4 py-3 border rounded-2xl font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${!isToday ? 'bg-indigo-50 border-indigo-200 ring-2 ring-indigo-500/20' : 'bg-white'}`} 
+          />
+        </div>
+
         <div className="flex gap-2 w-full md:w-auto no-print">
           <button onClick={() => window.print()} className="flex-1 bg-emerald-50 text-emerald-600 px-5 py-3 rounded-2xl font-black flex items-center justify-center gap-2 border border-emerald-100 hover:bg-emerald-600 hover:text-white transition"><i className="fas fa-print"></i> {t.printBtn}</button>
           <button onClick={() => { setEditingCustomer(null); setShowModal(true); }} className="flex-1 bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black flex items-center justify-center gap-2 shadow-xl hover:bg-emerald-700 transition uppercase text-xs tracking-widest">{t.newBtn}</button>
         </div>
       </div>
 
+      {showBanner && (
+        <div className="bg-indigo-600 text-white p-2 rounded-xl text-center text-[10px] font-black uppercase tracking-[0.2em] shadow-lg animate-pulse no-print">
+           <i className="fas fa-history mr-2"></i> {asOfDate} তারিখের রিপোর্ট
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3 sm:gap-4 no-print">
-          <div className="bg-white p-2 sm:p-3 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-center">
-              <p className="text-[7px] sm:text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{t.totalDue}</p>
-              <p className="text-sm sm:text-base font-black text-rose-600">৳{stats.totalDue.toLocaleString()}</p>
+          <div className={`p-2 sm:p-3 rounded-2xl border shadow-sm flex flex-col justify-center transition-colors ${!isToday ? 'bg-indigo-50 border-indigo-100' : 'bg-white border-gray-100'}`}>
+              <p className={`text-[7px] sm:text-[8px] font-black uppercase tracking-widest mb-0.5 ${!isToday ? 'text-indigo-400' : 'text-gray-400'}`}>{t.totalDue}</p>
+              <p className={`text-sm sm:text-base font-black ${!isToday ? 'text-indigo-700' : 'text-rose-600'}`}>৳{stats.totalDue.toLocaleString()}</p>
           </div>
-          <div className="bg-white p-2 sm:p-3 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-center">
-              <p className="text-[7px] sm:text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{t.totalAdvance}</p>
-              <p className="text-sm sm:text-base font-black text-emerald-600">৳{stats.totalAdvance.toLocaleString()}</p>
+          <div className={`p-2 sm:p-3 rounded-2xl border shadow-sm flex flex-col justify-center transition-colors ${!isToday ? 'bg-indigo-50 border-indigo-100' : 'bg-white border-gray-100'}`}>
+              <p className={`text-[7px] sm:text-[8px] font-black uppercase tracking-widest mb-0.5 ${!isToday ? 'text-indigo-400' : 'text-gray-400'}`}>{t.totalAdvance}</p>
+              <p className={`text-sm sm:text-base font-black ${!isToday ? 'text-indigo-700' : 'text-emerald-600'}`}>৳{stats.totalAdvance.toLocaleString()}</p>
           </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden print-area">
         <div className="hidden print:block p-8 text-center border-b-2 border-emerald-500 bg-emerald-50/10">
            <h2 className="text-3xl font-black text-emerald-900 tracking-tighter uppercase">FIRST STEP - {t.title}</h2>
-           <p className="text-[10px] font-bold text-gray-500 mt-2">{new Date().toLocaleDateString()}</p>
+           <p className="text-[10px] font-bold text-gray-500 mt-2">{asOfDate} তারিখের রিপোর্ট</p>
            <div className="w-20 h-1 bg-emerald-500 mx-auto mt-2 rounded-full"></div>
         </div>
 
@@ -287,8 +336,8 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                   <td className="px-6 py-4 text-gray-500 font-bold">{c.phone}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex flex-col items-end">
-                      <span className={`text-sm font-black ${c.dueAmount > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>৳{Math.abs(c.dueAmount).toLocaleString()}</span>
-                      <span className="text-[9px] font-black uppercase text-gray-400 tracking-tighter">{c.dueAmount > 0 ? t.dueLabel : t.advanceLabel}</span>
+                      <span className={`text-sm font-black ${c.displayBalance > 0 ? 'text-rose-600' : 'text-emerald-700'} ${!isToday ? 'text-indigo-700' : ''}`}>৳{Math.abs(c.displayBalance).toLocaleString()}</span>
+                      <span className="text-[9px] font-black uppercase text-gray-400 tracking-tighter">{c.displayBalance > 0 ? t.dueLabel : t.advanceLabel}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-center no-print">
@@ -302,7 +351,6 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                 </tr>
               ))}
             </tbody>
-            {/* Table Footer: Clearly displays the grand totals summary for printing. Redesigned to prevent cut-off. */}
             <tfoot className="border-t-4 border-black bg-gray-50 font-black print-total-row" style={{ pageBreakInside: 'avoid' }}>
                 <tr style={{ pageBreakInside: 'avoid' }}>
                     <td colSpan={2} className="px-6 py-4 text-[11px] font-black uppercase text-gray-800 align-top">
@@ -328,7 +376,6 @@ const Customers: React.FC<CustomersProps> = ({ data, onAdd, onUpdate, onDelete, 
                     </td>
                     <td className="no-print"></td>
                 </tr>
-                {/* Print Safety Buffer Row: ensures content doesn't hit the absolute edge of the page */}
                 <tr className="hidden print:table-row h-24">
                   <td colSpan={4} className="border-none"></td>
                 </tr>

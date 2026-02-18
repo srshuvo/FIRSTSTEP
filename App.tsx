@@ -30,7 +30,15 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const [lastDeleted, setLastDeleted] = useState<{ type: string, item: any, label: string } | null>(null);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
   const undoTimeoutRef = useRef<any>(null);
+  const notificationTimeoutRef = useRef<any>(null);
+
+  const notify = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
+    if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
+    setNotification({ message, type });
+    notificationTimeoutRef.current = setTimeout(() => setNotification(null), 4000);
+  };
 
   useEffect(() => {
     if (lastDeleted) {
@@ -226,6 +234,7 @@ const App: React.FC = () => {
         return p;
       })
     }));
+    notify(lang === 'bn' ? "সফলভাবে সংরক্ষিত!" : "Saved successfully!");
   };
   const deleteStockIn = (id: string) => {
     setData(prev => {
@@ -267,6 +276,7 @@ const App: React.FC = () => {
       products: prev.products.map(p => p.id === log.productId ? { ...p, stock: p.stock + log.quantity } : p),
       customers: prev.customers.map(c => c.id === log.customerId ? { ...c, dueAmount: c.dueAmount - log.totalPrice } : c)
     }));
+    notify(lang === 'bn' ? "ফেরত গ্রহণ সম্পন্ন!" : "Return Processed!");
   };
 
   const handlePaymentRecord = (log: PaymentLog) => {
@@ -275,6 +285,7 @@ const App: React.FC = () => {
       customers: prev.customers.map(c => c.id === log.customerId ? { ...c, dueAmount: c.dueAmount - (log.amount + (log.discount || 0)) } : c),
       paymentLogs: [log, ...(prev.paymentLogs || [])]
     }));
+    notify(lang === 'bn' ? "পেমেন্ট সফল!" : "Payment Recorded!");
   };
 
   const deleteStockOut = (logId: string) => {
@@ -396,6 +407,7 @@ const App: React.FC = () => {
               data={data} 
               onRecordPurchase={recordStockIn} 
               onRecordSale={recordStockOut} 
+              onNotify={notify}
               lang={lang} 
             />
           )}
@@ -434,8 +446,8 @@ const App: React.FC = () => {
               onAdd={addSupplier} 
               onUpdate={updateSupplier} 
               onDelete={deleteSupplier} 
-              onDeleteLog={deleteStockIn}
-              onUpdateLog={updateStockIn}
+              onDeleteLog={deleteStockIn} 
+              onUpdateLog={updateStockIn} 
               lang={lang} 
             />
           )}
@@ -452,6 +464,22 @@ const App: React.FC = () => {
       </div>
 
       <LanguageSwitcher lang={lang} setLang={setLang} />
+
+      {/* Global Professional Notification (Undo Popup style) */}
+      {notification && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[120] animate-slide-up no-print">
+           <div className="bg-slate-900 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-4 border border-slate-800 border-b-4 border-b-emerald-500 min-w-[300px]">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${notification.type === 'error' ? 'bg-rose-500/20 text-rose-500' : notification.type === 'warning' ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/20 text-emerald-500'}`}>
+                <i className={`fas ${notification.type === 'error' ? 'fa-circle-xmark' : notification.type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-check'} text-lg`}></i>
+              </div>
+              <div className="flex-1">
+                 <p className="text-xs font-black uppercase text-gray-500 tracking-widest leading-none mb-1">{notification.type}</p>
+                 <p className="text-sm font-bold text-gray-100">{notification.message}</p>
+              </div>
+              <button onClick={() => setNotification(null)} className="text-gray-500 hover:text-white transition ml-2"><i className="fas fa-times"></i></button>
+           </div>
+        </div>
+      )}
 
       {lastDeleted && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[110] animate-slide-up no-print">
